@@ -14,7 +14,24 @@ class Iox
   
   class Error < RuntimeError
   end
-  class BogusCliMode < Error
+  
+  class IoxError < RuntimeError
+    def initialize(txt)
+      @txt = txt
+    end
+  end
+  class InvalidInputError < IoxError
+    def invalid_input
+      "\nCONFIG ERROR! (SyntaxError).\n'% Invalid Input' detected.\n=> #{@txt} <=\n"
+    end
+  end
+  class CommitError < IoxError
+    def error_msg
+      %|\nCONFIG ERROR! (SemanticError).\nThe '% Failed to commit' error message was detected.\nAll changes made have been reverted.|
+    end
+    def show_configuration_failed
+      puts @txt
+    end
   end
   class BogusMode < Error
     # TODO see to print a nice error message with actual mode and mode required.
@@ -73,9 +90,32 @@ class Iox
   end
   
   def putline(line,*args)
-    output, ev = super
-    raise IOX::InvalidInput.new(output.join) if output.join =~ /% Invalid input\./
+    output, rc = super
+    raise InvalidInputError.new(line) if output.join =~ /\% Invalid input detected at/
     output
+  end
+  
+  def commit(arg={})
+    return unless config?
+    output = putline "commit", arg
+    if /\% Failed to commit/.match(output.join)
+      err = show_configuration_failed
+      # putline 'abort' # make sure buffer config is cleaned up.
+      raise Iox::CommitError.new(show_configuration_failed)
+    end
+    output
+  end
+  
+  def abort_config
+    return unless config?
+    putline 'abort' # make sure buffer config is cleaned up.
+    nil
+  end
+
+  private
+  
+  def show_configuration_failed
+    putline 'show configuration failed'
   end
   
 end

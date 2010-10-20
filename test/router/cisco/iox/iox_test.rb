@@ -62,6 +62,6 @@ class TestRouterCiscoIoxIox < Test::Unit::TestCase
     assert_nil x.username
     assert_raise(NoMethodError) { x.pwd }
     assert_not_equal "lab", x.instance_eval { @pwd }
-    assert_equal :telnet, x.instance_eval { @method }    
+    assert_equal :telnet, x.instance_eval { @method }
   end
 end

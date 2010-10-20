@@ -7,8 +7,9 @@ module Modes
 
   def config(config=nil, arg={})
     login unless connected?
-    mode = in?
     if config
+      mode = in?
+      change_mode_to :config
       output = send(config, arg)
       output << commit
       change_mode_to mode
@@ -16,26 +17,6 @@ module Modes
     else
       change_mode_to :config
     end
-  end
-
-  def show_configuration_failed
-    putline 'show configuration failed'
-  end
-
-  def commit(arg={})
-    raise Iox::BogusCliMode unless config?
-    output=''
-    begin
-      output = putline "commit", arg
-    rescue Exception => e
-      raise Iox::ConfigError
-    end
-    if /\% Failed to commit/.match(output.join)
-      err = show_configuration_failed
-      putline 'abort'
-      raise Iox::ConfigError.new(err)
-    end
-    output
   end
 
   def exec(cmd=nil, arg={})
@@ -79,7 +60,30 @@ module Modes
   def config?
     @lp =~ /\(config(|.+)\)/
   end
+  
+  def config_lvl?
+    return -1 unless config?
+    @lp =~ /\(config(|.+)\)/
+    Regexp.last_match(1).split('-').size
+  end
+  
+  def top
+    return unless config?
+    1.upto(config_lvl? - 1) { putline 'exit'}
+  end
 
+  def top?
+    return false unless config?
+    @lp =~ /\(config(|.+)\)/
+    Regexp.last_match(1).size == 0
+  end
+  
+  def submode?
+    return '' unless config?
+     @lp =~ /\(config(|.+)\)/
+     Regexp.last_match(1).split('-')[1..-1].join('-')
+  end
+  
   def exec?
     ! shell? and ! config?
   end
