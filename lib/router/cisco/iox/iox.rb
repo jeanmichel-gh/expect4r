@@ -33,6 +33,14 @@ class Iox
       puts @txt
     end
   end
+  
+  class PingError < ::Iox::IoxError
+    def error_message
+      %|\nPING FAILURE! \n#{@txt}\n|
+    end
+  end
+  
+  
   class BogusMode < Error
     # TODO see to print a nice error message with actual mode and mode required.
   end

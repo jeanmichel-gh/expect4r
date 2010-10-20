@@ -1,17 +1,15 @@
+require 'router/cisco/iox/iox'
 module Interact
 module Router
 module Iox
 module Ping
-  
-  class PingError < RuntimeError
-  end
-  
+    
   def ping(arg={})
     if arg.is_a?(Hash)
-      arg = {:pct_sucess=>100}.merge(arg) 
-      pct_sucess = arg[:pct_success]
+      arg = {:pct_success=>100}.merge(arg) 
+      pct_success = arg[:pct_success]
     else
-      pct_sucess = 100
+      pct_success = 100
     end
     case arg
     when String
@@ -21,17 +19,20 @@ module Ping
     else
       raise ArgumentError, "Invalid argument: #{arg.inspect}"
     end
-    output.find { |x| x =~/Success.*[^\d](\d+) percent \((\d+)\/(\d+)\)/}
-    if Regexp.last_match(1) && 
+    r = output[0].find { |x| p x ; x =~/Success.*[^\d](\d+) percent \((\d+)\/(\d+)\)/}
+    if r && 
+       Regexp.last_match(1) && 
        Regexp.last_match(2) && 
        Regexp.last_match(3)
-       if $1.to_i < pct_sucess
-         raise PingError, Regexp.last_match(0)
+       
+       if $1.to_i < pct_success
+         raise ::Iox::PingError, Regexp.last_match(0)
        else
          [$1.to_i,[$2.to_i,$3.to_i],output]
        end
+       
     else
-      raise PingError, output
+      raise ::Iox::PingError.new(output[0].join("\n"))
     end
   end
   
@@ -44,7 +45,7 @@ __END__
 
 
 irb(main):110:0> p @x.ping :dest=>'172.20.186.101'
-["100", ["5", "5"], ["ping 172.20.186.101\r\n", "\rTue Oct 19 16:11:02.240 UTC\r\n", "Type escape sequence to abort.\r\n", "Sending 5, 100-byte ICMP Echos to 172.20.186.101, timeout is 2 seconds:\r\n", "!!!!!\r\n", "Success rate is 100 percent (5/5), round-trip min/avg/max = 1/1/3 ms\r\n", "RP/0/0/CPU0:Dijon-rp0#"]]
+["100", ["5", "5"], ["ping 172.20.186.101\r\n", "\rTue Oct 19 16:11:02.240 UTC\r\n", "Type escape sequence to abort.\r\n", "Sending 5, 100-byte ICMP Echos to 172.20.186.101, timeout is 2 seconds:\r\n", "!!!!!\r\n", "Success rate is 100 percent (5/5), round-trip min/avg/max = 1/1/3 ms\r\n", "RP/0/0/CPU0PU0:Dijon-rp0#"]]
 => nil
 
 irb(main):133:0> p @x.ping :dest=>'172.20.186.101', :pct_success=>120
