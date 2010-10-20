@@ -58,7 +58,7 @@ class Iox
   
   def login
     super(spawnee)
-    putlines %{
+    send %{
       term len 0
       term width 0
     }

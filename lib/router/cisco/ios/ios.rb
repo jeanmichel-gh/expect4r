@@ -56,7 +56,7 @@ class Ios
     
   def login
     super("telnet #{@host}")
-    putlines %{
+    send %{
       term len 0
       term width 0
     }
