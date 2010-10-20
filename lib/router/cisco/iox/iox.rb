@@ -49,13 +49,13 @@ class Iox
   alias :username :user
   alias :hostname :host
   def initialize(*args)
-    # def initialize(method, host, user, pwd, port=0)
-    if args.size>1
+    if args.size>2 and args[1].is_a?(String)
       @method, host, @user, pwd = args
-    elsif args.size ==1 and args[0].is_a?(Hash)
-      host = args[0][:host] || args[0][:hostname]
-      @user = args[0][:user]|| args[0][:username]
-      pwd  = args[0][:pwd]  || args[0][:password]
+    elsif args.size ==2 and args[1].is_a?(Hash) and args[0].is_a?(Symbol)
+      @method = args[0]
+      host = args[1][:host] || args[1][:hostname]
+      @user = args[1][:user]|| args[1][:username]
+      pwd  = args[1][:pwd]  || args[1][:password]
     end
     @host, port = host.split
     @port = port.to_i
