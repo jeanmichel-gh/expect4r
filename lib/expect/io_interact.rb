@@ -75,8 +75,12 @@ module Interact
       @thread = Thread.new do
         PTY.spawn(cmd) do |pipe_read, pipe_write, pid|
           @r, @w, @pid = pipe_read, pipe_write, pid
-          Process.wait(@pid,0)
-          child_exited = true
+          begin 
+            Process.wait(@pid,0)
+          rescue
+          ensure
+            child_exited = true
+          end
         end
       end
       # STDOUT.puts "*** #{child_exited} ***"      
@@ -127,9 +131,7 @@ module Interact
       reader :terminate
       putline ' ', :no_trim=>true, :no_echo=>true
     rescue => e
-      p 'HERE ****'
-      p e
-      # logout
+      exp_internal e.to_s
     end
   end
 
@@ -290,7 +292,6 @@ module Interact
             c = getc
             break if c.nil?
             STDOUT.putc c
-            # STDOUT.flush
           end
         rescue => e
           p e

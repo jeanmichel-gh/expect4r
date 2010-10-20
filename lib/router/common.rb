@@ -23,9 +23,6 @@ module Common
     end
   end
 
-  def show(s, arg={})
-    exec "show #{s}", arg
-  end
   def spawnee_username
     @user
   end
