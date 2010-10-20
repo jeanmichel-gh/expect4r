@@ -37,7 +37,7 @@ module Modes
   def exec(cmd=nil, *args)
     login unless connected?
     if cmd.nil?
-      _exec_mode_
+      to_exec
     else
       if config?
         send("run #{cmd}", *args)
@@ -57,10 +57,10 @@ module Modes
     connected = connected?
     login unless connected?
     if cmd.nil?
-      _shell_mode_
+      to_shell
     else
       mode = _mode_?
-      _shell_mode_
+      to_shell
       output = send(cmd, *args)
       change_mode_to mode
       output
@@ -81,32 +81,30 @@ module Modes
   
   private
  
-  def _config_mode_
+  def to_config
     return :config if config?
-    _exec_mode_
+    to_exec
     putline 'edit', :debug=>1
     raise RuntimeError, "unable to got to config mode" unless config?
     :config
   end
   
-  def _shell_mode_
+  def to_shell
     return :shell if shell?
-    _exec_mode_
+    to_exec
     putline 'start shell'
     raise RuntimeError, "unable to got to shell mode" unless shell?
     :shell
   end
   
-  def _exec_mode_
+  def to_exec
     return :exec if exec?
     top if config?
     exit
     raise RuntimeError, "unable to got to exec mode" unless exec?
     :exec
   end
-  alias  to_config _config_mode_
-  alias  to_shell  _shell_mode_
-  alias  to_exec   _exec_mode_
+
 end
 end
 end

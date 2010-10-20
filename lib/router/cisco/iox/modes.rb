@@ -88,7 +88,7 @@ module Modes
     @lp == '# '
   end
 
-  def _config_mode_
+  def to_config
     return :config if config?
     to_exec
     putline 'configure'
@@ -96,7 +96,7 @@ module Modes
     :config
   end
 
-  def _shell_mode_
+  def to_shell
     return :shell if shell?
     to_exec
     putline 'run'
@@ -104,17 +104,13 @@ module Modes
     :shell
   end
 
-  def _exec_mode_
+  def to_exec
     return :exec if exec?
     putline "exit"  if shell?
     putline "abort" if config?
     raise RuntimeError, "unable to got to exec mode" unless exec?
     :exec
   end
-
-  alias  to_config _config_mode_
-  alias  to_shell  _shell_mode_
-  alias  to_exec   _exec_mode_
 
 end
 end

@@ -3,6 +3,7 @@ require 'router/common'
 require 'router/cisco/iox/iox'
 require 'router/cisco/iox/modes'
 require 'router/cisco/iox/show'
+require 'misc/passwd'
 
 class Iox
   include Interact
@@ -43,17 +44,24 @@ class Iox
       new :ssh, *args
     end
   end
-
-  attr_reader :host, :user, :method, :port
   
-  def initialize(method, host, user, pwd, port=0)
-    @method = method
-    @host = host
-    @user = user
+  attr_reader :host, :user, :method, :port
+  alias :username :user
+  alias :hostname :host
+  def initialize(*args)
+    # def initialize(method, host, user, pwd, port=0)
+    if args.size>1
+      @method, host, @user, pwd = args
+    elsif args.size ==1 and args[0].is_a?(Hash)
+      host = args[0][:host] || args[0][:hostname]
+      @user = args[0][:user]|| args[0][:username]
+      pwd  = args[0][:pwd]  || args[0][:password]
+    end
+    @host, port = host.split
+    @port = port.to_i
     @pwd  = Interact.cipher(pwd) if pwd
     @prompt = /(.*)(>|#|\$)\s*$/
     @more = / --More-- /
-    @port = port
   end
   
   def login

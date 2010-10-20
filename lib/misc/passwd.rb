@@ -1,3 +1,4 @@
+require 'rubygems'
 require 'openssl'
 require 'digest/sha1'
 module Interact

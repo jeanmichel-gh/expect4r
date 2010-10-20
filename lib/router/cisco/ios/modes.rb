@@ -34,7 +34,7 @@ module IosModes
     @lp =~ /.+>\s*$/
   end
     
-  def _config_mode_
+  def to_config
     return :config if config?
     to_enable
     putline 'configure terminal'
@@ -63,7 +63,7 @@ module IosModes
     :user
   end
   
-  alias  to_config  _config_mode_
+  alias  to_config  to_config
   alias  to_enable  _enable_mode_
   alias  to_user    _user_mode_
   
