@@ -5,12 +5,12 @@ module Router
 module Junos
 module Modes
 
-def config(config=nil, arg={})
+def config(stmts=nil, arg={})
   login unless connected?
-  mode = in?
-  mode = change_mode_to :config
-  if config
-    output = send(config, arg)
+  if stmts
+    mode = in?
+    to_config
+    output = send(stmts, arg)
     output << commit
     change_mode_to(mode)
     output
@@ -30,7 +30,7 @@ def exec(cmd=nil, *args)
       send cmd, *args
     else
       mode = _mode_?
-      change_mode_to :exec
+      to_exec
       output = send(cmd, *args)
       change_mode_to mode
       output

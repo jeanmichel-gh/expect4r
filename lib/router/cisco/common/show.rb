@@ -1,6 +1,6 @@
 module Interact
 module Router
-module Iox
+module CiscoCommon
 module Show
 
   def show(s, arg={})

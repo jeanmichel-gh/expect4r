@@ -6,12 +6,12 @@ module Interact
 module Router
 module Common
 
-  def termserver?
+  def console?
     @port.to_i > 0
   end
 
   def io_escape_char_cb
-    putc "\n" if termserver?
+    putc "\n" if console?
   end
 
   def spawnee

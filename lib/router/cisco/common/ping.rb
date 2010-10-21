@@ -1,7 +1,6 @@
-require 'router/cisco/iox/iox'
 module Interact
 module Router
-module Iox
+module CiscoCommon
 module Ping
     
   def ping(arg={})

@@ -47,37 +47,23 @@ class J
   include Interact::Router::Common
   include Interact::Router::Common::Modes
   include Interact::Router::Junos::Modes
-
-  # def J.new_telnet(*args)
-  #   new :telnet, *args
-  # end
-  # 
-  # def J.new_ssh(*args)
-  #   new :ssh, *args
-  # end
-  
-  # attr_reader :host, :port, :method
   
   def initialize(*args)
     super
-    # @method = method
-    # @host = host
-    # @user = user
-    # @pwd  = pwd
-    # @port = port
     @ps1 = /(^|\r\r)([-a-zA-z@_~=\.\(\)\d]+(>|\#|%)|%|\$) $/
     @more =  /---\(more(| \d+\%)\)---/
   end
+  
   def login
     ENV['TERM']='dumb'
-    super("ssh #{@user}@#{@host}")
+    super(spawnee)
     send %{
       set cli screen-length 0
       set cli complete-on-space off
     }
   end
   
-  def termserver?
+  def console?
     @port>0
   end
   

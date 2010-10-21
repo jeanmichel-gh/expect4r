@@ -8,7 +8,7 @@ module Modes
   def in?(mode=:none)
     login unless connected?
     case mode
-    when :enable  ; enable?
+    when :exec    ; exec?
     when :user    ; user?
     when :config  ; config?
     else
@@ -16,13 +16,48 @@ module Modes
     end
   end
   
+  
+  def config(config=nil, arg={})
+    login unless connected?
+    if config
+      mode = in?
+      change_mode_to :config
+      output = send(config, arg)
+      change_mode_to mode
+      output
+    else
+      change_mode_to :config
+    end
+  end
+
+  def exec(cmd=nil, arg={})
+    login unless connected?
+    if cmd.nil?
+      change_mode_to :exec
+    else
+      if exec?
+        output = send(cmd, arg)
+      elsif config?
+        output = send("do #{cmd}", arg)
+      else
+        mode = in?
+        change_mode_to :exec
+        output = send(cmd, arg)
+        change_mode_to mode
+        output
+      end
+    end
+  end
+  
+  
+  
   def _mode_?
      if user? 
        :user
      elsif config?
        :config
-     elsif enable?
-       :enable
+     elsif exec?
+       :exec
      end
    end
    
@@ -30,7 +65,7 @@ module Modes
     @lp =~ /\(config(|.+)\)/
   end
   
-  def enable?
+  def exec?
     ! user? and ! config?
   end
   
@@ -40,26 +75,21 @@ module Modes
     
   def to_config
     return :config if config?
-    to_enable
-    putline 'configure terminal'
+    to_exec
+    putline 'configure terminal' if exec?
     raise RuntimeError, "unable to got to config mode" unless config?
     :config
   end
   
-  def to_enable
-    return :enable if enable?
-    exp_debug :enable
-    if user?
-      puts 'enable'
-      expect 'Password'
-      putline 'lab'
-    elsif config?
-      putline 'exit'
+  def to_exec
+    return :exec if exec?
+    if config?
+      1.upto(config_lvl?) { putline 'exit'}
     end
-    raise RuntimeError, "unable to got to enable mode" unless enable?
-    :enable
+    raise RuntimeError, "unable to got to exec mode" unless exec?
+    :exec
   end
-  
+
   def to_user
     return if user?
     putline "exit"

@@ -71,6 +71,7 @@ module Interact
   def spawn(cmd)
     begin
       child_exited = false
+      exp_internal "#{cmd}"
       # STDOUT.puts "*** FALSE ***"
       @thread = Thread.new do
         PTY.spawn(cmd) do |pipe_read, pipe_write, pid|
