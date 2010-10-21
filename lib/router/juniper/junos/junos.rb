@@ -4,20 +4,40 @@ require 'router/common'
 require 'router/juniper/junos/modes'
 
 class J
+  
+  class JError < RuntimeError
+    def initialize(txt)
+      @txt = txt
+    end
+  end
+  class SyntaxError < JError
+    def invalid_input
+      "\nSyntaxError.\n'% Invalid Input' detected.\n=> #{@txt} <=\n"
+    end
+  end
+
+  class SemanticError < JError
+    def error_msg
+      %|\nSemanticError.\nThe '% Failed to commit' error message was detected.\nAll changes made have been reverted.|
+    end
+    def show_configuration_failed
+      puts @txt
+    end
+  end
+  
+  class PingError < JError
+    def error_msg
+      %|\nPING FAILURE! \n#{@txt}\n|
+    end
+  end
+  
+  
   class Error < RuntimeError
   end
   class CliError < Error
     def initialize(s)
       super s.gsub(/\r/,"\n")
     end
-  end
-  class ConfigError < Error
-  end
-  class BogusCliMode < Error
-  end
-  class UnknownCommandError < CliError
-  end
-  class SyntaxError < CliError
   end
 end
 
@@ -43,7 +63,7 @@ class J
     @user = user
     @pwd  = pwd
     @port = port
-    @prompt = /(^|\r\r)([-a-zA-z@_~=\.\(\)\d]+(>|\#|%)|%|\$) $/
+    @ps1 = /(^|\r\r)([-a-zA-z@_~=\.\(\)\d]+(>|\#|%)|%|\$) $/
     @more =  /---\(more(| \d+\%)\)---/
   end
   def login
@@ -61,15 +81,26 @@ class J
   
   def putline(line,arg={})
     o, rc = super
-    raise UnknownCommandError.new(o.join) if o.join =~ /(unknown command|syntax error)\./
-    raise SyntaxError.new(o.join) if o.join =~ /syntax error/
+    raise SyntaxError.new(o.join("\n")) if o.join =~ /(unknown command|syntax error)\./
     o
   end
+  
   def top
     putline 'top'
   end
+  
   def exit
     putline 'exit'
+  end
+  
+  def commit(arg={})
+    return unless config?
+    output = putline "commit", arg
+    if /\% Failed to commit/.match(output.join)
+      putline 'rollback'
+      raise CommitError.new(output)
+    end
+    output
   end
   
   private

@@ -36,7 +36,7 @@ module Common
   end
 
   def spawnee_prompt
-    @prompt
+    @ps1
   end
 
 end

@@ -236,14 +236,14 @@ module Interact
           throw :done, [ :abort,  r._io_buf1]
         end
         case r._io_string
-        when @prompt
+        when @ps1, @ps1_bis
           unless r._io_more?
             r._io_save false, "matching PROMPT"
             exp_internal "returning #{r._io_buf1.inspect}"
             throw(:done, [:ok, r._io_buf1])
           end
           exp_internal "MORE DATA TO READ"
-        when /(.+)\r\n/
+        when /(.+)\r\n/, "\r\n"
           r._io_save no_echo, "matching EOL", "\r\n"
         when @more
           r._io_save no_echo, "matching MORE"

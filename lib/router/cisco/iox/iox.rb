@@ -12,20 +12,19 @@ class Iox
   include Interact::Router::Iox::Modes
   include Interact::Router::Iox::Show
   
-  class Error < RuntimeError
-  end
-  
   class IoxError < RuntimeError
     def initialize(txt)
       @txt = txt
     end
   end
-  class InvalidInputError < IoxError
+  class SyntaxError < IoxError
     def invalid_input
       "\nCONFIG ERROR! (SyntaxError).\n'% Invalid Input' detected.\n=> #{@txt} <=\n"
     end
   end
-  class CommitError < IoxError
+  class InvalidInputError < SyntaxError
+  end
+  class SemanticError < IoxError
     def error_msg
       %|\nCONFIG ERROR! (SemanticError).\nThe '% Failed to commit' error message was detected.\nAll changes made have been reverted.|
     end
@@ -33,32 +32,13 @@ class Iox
       puts @txt
     end
   end
+  class CommitError < SemanticError
+  end
   
   class PingError < ::Iox::IoxError
     def error_message
       %|\nPING FAILURE! \n#{@txt}\n|
     end
-  end
-  
-  
-  class BogusMode < Error
-    # TODO see to print a nice error message with actual mode and mode required.
-  end
-  class CliError < Error
-    def initialize(arg)
-      s = arg.is_a?(Array) ? arg.join : arg
-      super s.gsub(/\r\n/,"\n")
-    end
-  end
-  class ConfigError < Error
-    def initialize(arg)
-      s = arg.is_a?(Array) ? arg.join : arg
-      super s.gsub(/\r\n/,"\n")
-    end
-  end
-  class UnknownCommandError < CliError
-  end
-  class SyntaxError < CliError
   end
   
   class << self
@@ -85,7 +65,7 @@ class Iox
     @host, port = host.split
     @port = port.to_i
     @pwd  = Interact.cipher(pwd) if pwd
-    @prompt = /(.*)(>|#|\$)\s*$/
+    @ps1 = /(.*)(>|#|\$)\s*$/
     @more = / --More-- /
   end
   
@@ -109,7 +89,7 @@ class Iox
     if /\% Failed to commit/.match(output.join)
       err = show_configuration_failed
       # putline 'abort' # make sure buffer config is cleaned up.
-      raise Iox::CommitError.new(show_configuration_failed)
+      raise Iox::SemanticError.new(show_configuration_failed)
     end
     output
   end
