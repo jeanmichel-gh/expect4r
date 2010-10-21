@@ -1,5 +1,9 @@
-require 'router/router_modes'
-module IosModes
+require 'router/modes'
+
+module Interact
+module Router
+module Ios
+module Modes
   
   def in?(mode=:none)
     login unless connected?
@@ -42,7 +46,7 @@ module IosModes
     :config
   end
   
-  def _enable_mode_
+  def to_enable
     return :enable if enable?
     exp_debug :enable
     if user?
@@ -56,15 +60,14 @@ module IosModes
     :enable
   end
   
-  def _user_mode_
+  def to_user
     return if user?
     putline "exit"
     raise RuntimeError, "unable to got to user mode" unless exec?
     :user
   end
   
-  alias  to_config  to_config
-  alias  to_enable  _enable_mode_
-  alias  to_user    _user_mode_
-  
+end
+end
+end
 end

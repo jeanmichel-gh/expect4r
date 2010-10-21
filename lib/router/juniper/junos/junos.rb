@@ -1,9 +1,10 @@
 
 require 'expect/io_interact'
 require 'router/common'
+require 'router/base_router'
 require 'router/juniper/junos/modes'
 
-class J
+class J < ::Interact::Router::BaseRouter
   
   class JError < RuntimeError
     def initialize(txt)
@@ -41,28 +42,29 @@ class J
   end
 end
 
-class J
+class J 
   include Interact
   include Interact::Router::Common
   include Interact::Router::Common::Modes
   include Interact::Router::Junos::Modes
 
-  def J.new_telnet(*args)
-    new :telnet, *args
-  end
+  # def J.new_telnet(*args)
+  #   new :telnet, *args
+  # end
+  # 
+  # def J.new_ssh(*args)
+  #   new :ssh, *args
+  # end
   
-  def J.new_ssh(*args)
-    new :ssh, *args
-  end
+  # attr_reader :host, :port, :method
   
-  attr_reader :host, :port, :method
-  
-  def initialize(method, host, user, pwd, port=0)
-    @method = method
-    @host = host
-    @user = user
-    @pwd  = pwd
-    @port = port
+  def initialize(*args)
+    super
+    # @method = method
+    # @host = host
+    # @user = user
+    # @pwd  = pwd
+    # @port = port
     @ps1 = /(^|\r\r)([-a-zA-z@_~=\.\(\)\d]+(>|\#|%)|%|\$) $/
     @more =  /---\(more(| \d+\%)\)---/
   end

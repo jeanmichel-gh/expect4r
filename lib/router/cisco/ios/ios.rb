@@ -1,59 +1,43 @@
 require 'expect/io_interact'
-require 'rubygems'
-require 'highline/import'
-require 'cisco_ios/ios_modes'
+require 'router/common'
+require 'router/base_router'
+require 'router/cisco/ios/ios'
+require 'router/cisco/ios/modes'
+require 'misc/passwd'
 
-class Ios
-  include IosModes
-  class Error < RuntimeError
-  end
-  class BogusMode < Error
-    # TODO see to print a nice error message with actual mode and mode required.
-  end
-  class CliError < Error
-    def initialize(arg)
-      s = arg.is_a?(Array) ? arg.join : arg
-      super s.gsub(/\r\n/,"\n")
-    end
-  end
-  class ConfigError < Error
-    def initialize(arg)
-      s = arg.is_a?(Array) ? arg.join : arg
-      super s.gsub(/\r\n/,"\n")
-    end
-  end
-  class UnknownCommandError < CliError
-  end
-  class SyntaxError < CliError
-  end
-  
+class Ios < ::Interact::Router::BaseRouter
+
   include Interact
-  # include IoxModes
+  include Interact::Router::Common
+  include Interact::Router::Common::Modes
+  include Interact::Router::Ios::Modes
+  # TODO: include Interact::Router::Ios::Show
   
-  def initialize(host, user, pwd)
-    @host = host
-    @user = user
-    @pwd  = pwd
-    @prompt = /(.*)(>|#|\$)\s*$/
+  class IosError < RuntimeError
+    def initialize(txt)
+      @txt = txt
+    end
+  end
+  class SyntaxError < IosError
+    def invalid_input
+      "\nSyntaxError.\n'% Invalid Input' detected.\n=> #{@txt} <=\n"
+    end
+  end
+  class InvalidInputError < SyntaxError
+  end
+  
+  def initialize(*args)
+    super
+    @ps1 = /(.*)(>|#|\$)\s*$/
     @more = / --More-- /
   end
   
-  def spawnee_username
-    @user
+  def enable
+    @enable_password = 'lab'
+    @matches << [/^Password: $/, @enable_password ]
+    send 'enable'
   end
-
-  def spawnee_password
-    if @pwd == '*ask_me*'
-      ask("Enter your password:  ") { |q| q.echo = "X" }
-    else  
-      @pwd
-    end
-  end
-
-  def spawnee_prompt
-    @prompt
-  end
-    
+  
   def login
     super("telnet #{@host}")
     send %{
@@ -62,13 +46,9 @@ class Ios
     }
   end
   
-  def io_escape_char_cb
-    #DO Nothing if telnet not from console.
-  end
-  
   def putline(line,*args)
     output, ev = super
-    raise IOX::InvalidInput.new(output.join) if output.join =~ /% Invalid input\./
+    raise InvalidInputError.new(output.join("\n")) if output.join =~ /% Invalid input\./
     output
   end
 end

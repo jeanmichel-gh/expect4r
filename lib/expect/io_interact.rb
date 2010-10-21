@@ -195,7 +195,7 @@ module Interact
           puts spawnee_username
         when /password:\s*$/i
           read_pipe._io_save no_echo, "match PASSWORD"
-          @w.print(spawnee_password+"\n") and flush
+          @w.print(spawnee_password+"\n")
         when /Escape character is/
           read_pipe._io_save no_echo, "match Escape char"
           io_escape_char_cb
@@ -221,6 +221,7 @@ module Interact
 
   def putline(line, arg={})
     raise NoChildError if child_exited?
+        
     arg = {:ti=>13, :no_echo=>false, :debug=>0, :sync=> true, :no_trim=>false}.merge(arg)
     no_echo = arg[:no_echo]
     ti = arg[:ti]
@@ -249,6 +250,14 @@ module Interact
           r._io_save no_echo, "matching MORE"
           putc ' '
         end
+        
+        @matches.each { |match, send|
+          if r._io_string =~ match
+             r._io_save no_echo, "match #{match}"
+            puts send
+          end
+        }
+        
       end
     end
     case rc
