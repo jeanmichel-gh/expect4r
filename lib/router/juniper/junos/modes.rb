@@ -111,3 +111,13 @@ end
 end
 end
 end
+
+
+__END__
+
+Console prompts:
+
+login:
+user@router%
+user@router>
+user@router#

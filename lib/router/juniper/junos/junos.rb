@@ -1,10 +1,9 @@
 
 require 'expect/io_interact'
 require 'router/common'
-require 'router/base_router'
 require 'router/juniper/junos/modes'
 
-class J < ::Interact::Router::BaseRouter
+class J < ::Interact::InteractBaseObject
   
   class JError < RuntimeError
     def initialize(txt)
@@ -24,6 +23,9 @@ class J < ::Interact::Router::BaseRouter
     def show_configuration_failed
       puts @txt
     end
+  end
+  
+  class CommitError < SemanticError
   end
   
   class PingError < JError
@@ -59,7 +61,7 @@ class J
     super(spawnee)
     send %{
       set cli screen-length 0
-      set cli complete-on-space off
+      # set cli complete-on-space off # there is a bug with logical router
     }
   end
   

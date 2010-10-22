@@ -1,7 +1,10 @@
+require 'router/error'
+
 module Interact
 module Router
 module CiscoCommon
 module Ping
+  include ::Interact::Router::Error
     
   def ping(arg={})
     if arg.is_a?(Hash)
@@ -12,12 +15,13 @@ module Ping
     end
     case arg
     when String
-      output = exec "ping #{arg}"
+      dest = arg
     when Hash
-      output = exec "ping #{arg[:dest]}", arg
+      dest = arg[:dest]
     else
       raise ArgumentError, "Invalid argument: #{arg.inspect}"
     end
+    output = exec "ping #{dest}", arg
     r = output[0].find { |x| p x ; x =~/Success.*[^\d](\d+) percent \((\d+)\/(\d+)\)/}
     if r && 
        Regexp.last_match(1) && 
@@ -25,13 +29,13 @@ module Ping
        Regexp.last_match(3)
        
        if $1.to_i < pct_success
-         raise ::Iox::PingError, Regexp.last_match(0)
+         raise PingError('router name here', dest, pct_success, $1.to_i, $2.to_i,$3.to_i, output)
        else
          [$1.to_i,[$2.to_i,$3.to_i],output]
        end
        
     else
-      raise ::Iox::PingError.new(output[0].join("\n"))
+      raise PingError.new('router name here', dest, pct_success, $1.to_i, $2.to_i,$3.to_i, output)
     end
   end
   
@@ -42,6 +46,7 @@ end
 
 __END__
 
+(rname, dest, exp_pct, act_pct, sent, recv)
 
 irb(main):110:0> p @x.ping :dest=>'172.20.186.101'
 ["100", ["5", "5"], ["ping 172.20.186.101\r\n", "\rTue Oct 19 16:11:02.240 UTC\r\n", "Type escape sequence to abort.\r\n", "Sending 5, 100-byte ICMP Echos to 172.20.186.101, timeout is 2 seconds:\r\n", "!!!!!\r\n", "Success rate is 100 percent (5/5), round-trip min/avg/max = 1/1/3 ms\r\n", "RP/0/0/CPU0PU0:Dijon-rp0#"]]

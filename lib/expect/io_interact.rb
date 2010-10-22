@@ -71,7 +71,6 @@ module Interact
   def spawn(cmd)
     begin
       child_exited = false
-      exp_internal "#{cmd}"
       # STDOUT.puts "*** FALSE ***"
       @thread = Thread.new do
         PTY.spawn(cmd) do |pipe_read, pipe_write, pid|
@@ -84,17 +83,22 @@ module Interact
           end
         end
       end
-      # STDOUT.puts "*** #{child_exited} ***"      
-      while @r.nil? ; sleep(0.3) ; end unless  child_exited
+      # STDOUT.puts "*** #{child_exited} ***"
+      unless child_exited
+        while @r.nil?
+          sleep(0.5) 
+          p 'HERE....'
+        end
+      end
     rescue => e
       raise SpawnError
-    end    
+    end
   end
-
-  def logout 
+  
+  def logout
     child_exit
   end
-
+  
   def putc(c)
     return unless @w || c.nil?
     exp_internal "[#{c}]"
@@ -196,7 +200,7 @@ module Interact
           puts spawnee_username
         when /password:\s*$/i
           read_pipe._io_save no_echo, "match PASSWORD"
-          @w.print(spawnee_password+"\n")
+          @w.print(spawnee_password+"\n") and flush
         when /Escape character is/
           read_pipe._io_save no_echo, "match Escape char"
           io_escape_char_cb
@@ -223,7 +227,7 @@ module Interact
   def putline(line, arg={})
     raise NoChildError if child_exited?
         
-    arg = {:ti=>13, :no_echo=>false, :debug=>0, :sync=> true, :no_trim=>false}.merge(arg)
+    arg = {:ti=>13, :no_echo=>false, :debug=>0, :sync=> false, :no_trim=>false}.merge(arg)
     no_echo = arg[:no_echo]
     ti = arg[:ti]
     line = line.gsub(/\s+/,' ').gsub(/^\s+/,'') unless arg[:no_trim]
@@ -252,7 +256,7 @@ module Interact
           putc ' '
         end
         
-        @matches.each { |match, send|
+        @matches.each { |match, send|  
           if r._io_string =~ match
              r._io_save no_echo, "match #{match}"
             puts send
@@ -361,3 +365,75 @@ module Kernel
   exp_debug :disable
 end
 
+module Interact
+  class InteractBaseObject
+    class << self
+      def new_telnet(*args)
+        new :telnet, *args
+      end
+      def new_ssh(*args)
+        new :ssh, *args
+      end
+      attr_reader :routers
+      def add(r)
+        @routers ||=[]
+        @routers << r
+      end
+    end
+    attr_reader :host, :user, :method, :port
+    alias :username :user
+    alias :hostname :host
+    def initialize(*args)
+      if args.size>2 and args[1].is_a?(String)
+        @method, host, @user, pwd = args
+      elsif args.size == 2 and args[1].is_a?(Hash) and args[0].is_a?(Symbol)
+        @method = args[0]
+        host = args[1][:host] || args[1][:hostname]
+        @user = args[1][:user]|| args[1][:username]
+        pwd  = args[1][:pwd]  || args[1][:password]
+      end
+      @host, port = host.split
+      @port = port.to_i
+      @pwd  = Interact.cipher(pwd) if pwd
+      @ps1 = /(.*)(>|#|\$)\s*$/
+      @more = / --More-- /
+      @matches=[]
+      InteractBaseObject.add(self)
+      self
+    end
+  end
+end
+
+if __FILE__ != $0
+
+  at_exit { 
+    if Interact::InteractBaseObject.routers
+      Interact::InteractBaseObject.routers.each { |r| r.logout if r.respond_to? :logout }
+    end
+    puts "at_exit function" 
+  }
+  
+else
+
+  require "test/unit"
+
+
+  class Interact::InteractBaseObject
+    def initialize
+      Interact::InteractBaseObject.add(self)
+    end
+  end
+
+  class TestRouterInteractBaseObject < Test::Unit::TestCase
+    include Interact
+
+    def test_add
+      assert [], InteractBaseObject.routers
+      InteractBaseObject.new
+      assert 1, InteractBaseObject.routers.size
+      InteractBaseObject.new 
+      assert 1, InteractBaseObject.routers.size
+    end
+  end
+
+end

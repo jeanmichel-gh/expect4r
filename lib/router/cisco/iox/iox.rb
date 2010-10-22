@@ -1,6 +1,6 @@
 require 'expect/io_interact'
 require 'router/common'
-require 'router/base_router'
+require 'router/error'
 require 'router/cisco/iox/iox'
 require 'router/cisco/iox/modes'
 require 'router/cisco/common/common'
@@ -8,48 +8,16 @@ require 'router/cisco/common/show'
 require 'router/cisco/common/ping'
 require 'misc/passwd'
 
-class Iox < ::Interact::Router::BaseRouter
+class Iox < ::Interact::InteractBaseObject
   
   include Interact
+  include Interact::Router
   include Interact::Router::Common
   include Interact::Router::Common::Modes
   include Interact::Router::CiscoCommon
   include Interact::Router::Iox::Modes
   include Interact::Router::CiscoCommon::Show
   include Interact::Router::CiscoCommon::Ping
-  
-  class IoxError < RuntimeError
-    def initialize(txt)
-      @txt = txt
-    end
-  end
-  
-  class SyntaxError < IoxError
-    def invalid_input
-      "\nCONFIG ERROR! (SyntaxError).\n'% Invalid Input' detected.\n=> #{@txt} <=\n"
-    end
-  end
-  
-  class InvalidInputError < SyntaxError
-  end
-  
-  class SemanticError < IoxError
-    def error_msg
-      %|\nCONFIG ERROR! (SemanticError).\nThe '% Failed to commit' error message was detected.\nAll changes made have been reverted.|
-    end
-    def show_configuration_failed
-      puts @txt
-    end
-  end
-  
-  class CommitError < SemanticError
-  end
-  
-  class PingError < ::Iox::IoxError
-    def error_message
-      %|\nPING FAILURE! \n#{@txt}\n|
-    end
-  end
   
   def initialize(*args)
     super
@@ -77,6 +45,12 @@ class Iox < ::Interact::Router::BaseRouter
     output
   end
   
+  def putline(line,*args)
+    output, rc = super
+    raise SyntaxError.new(line) if output.join =~ /\% Invalid input detected at/
+    output
+  end
+
   private
   
   def abort_config

@@ -20,13 +20,8 @@ module CiscoCommon
     @lp =~ /\(config(|.+)\)/
     Regexp.last_match(1).size == 0
   end
-  
-  def putline(line,*args)
-    output, rc = super
-    raise InvalidInputError.new(line) if output.join =~ /\% Invalid input detected at/
-    output
-  end
-  
+    
 end
 end
 end
+

@@ -1,6 +1,5 @@
 require 'expect/io_interact'
 require 'router/common'
-require 'router/base_router'
 require 'router/cisco/ios/ios'
 require 'router/cisco/ios/modes'
 require 'router/cisco/ios/termserver'
@@ -9,7 +8,7 @@ require 'router/cisco/common/show'
 require 'router/cisco/common/ping'
 require 'misc/passwd'
 
-class Ios < ::Interact::Router::BaseRouter
+class Ios < ::Interact::InteractBaseObject
 
   include Interact
   include Interact::Router::Common
@@ -58,6 +57,12 @@ class Ios < ::Interact::Router::BaseRouter
       term len 0
       term width 0
     }
+  end
+
+  def putline(line,*args)
+    output, rc = super
+    raise SyntaxError.new(line) if output.join =~ /\% Invalid input detected at/
+    output
   end
     
 end
