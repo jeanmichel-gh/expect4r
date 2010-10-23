@@ -415,6 +415,7 @@ module Expect4r
     alias :username :user
     alias :hostname :host
     def initialize(*args)
+      ciphered_pwd=nil
       if args.size>2 and args[1].is_a?(String)
         @method, host, @user, pwd = args
       elsif args.size == 2 and args[1].is_a?(Hash) and args[0].is_a?(Symbol)
@@ -422,10 +423,15 @@ module Expect4r
         host = args[1][:host] || args[1][:hostname]
         @user = args[1][:user]|| args[1][:username]
         pwd  = args[1][:pwd]  || args[1][:password]
+        ciphered_pwd  = args[1][:ciphered_pwd]
       end
       @host, port = host.split
       @port = port.to_i
-      @pwd  = pwd
+      @pwd = if ciphered_pwd
+        ciphered_pwd
+      else
+        Expect4r.cipher(pwd)
+      end
       @ps1 = /(.*)(>|#|\$)\s*$/
       @more = / --More-- /
       @matches=Set.new
