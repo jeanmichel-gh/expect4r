@@ -7,7 +7,7 @@ module TermServer
     config "line #{lineno}\nno modem dtr\nno modem dtr-active"
   end
   def clear_line(lineno)
-    puts "clear line #{lineno}\n"
+    exp_puts "clear line #{lineno}\n"
   end
   
 end

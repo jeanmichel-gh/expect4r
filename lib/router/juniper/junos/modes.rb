@@ -8,7 +8,7 @@ def config(stmts=nil, arg={})
   if stmts
     mode = in?
     to_config
-    output = send(stmts, arg)
+    output = exp_send(stmts, arg)
     output << commit
     change_mode_to(mode)
     output
@@ -23,13 +23,13 @@ def exec(cmd=nil, *args)
     to_exec
   else
     if config?
-      send("run #{cmd}", *args)
+      exp_send("run #{cmd}", *args)
     elsif exec?
-      send cmd, *args
+      exp_send cmd, *args
     else
       mode = _mode_?
       to_exec
-      output = send(cmd, *args)
+      output = exp_send(cmd, *args)
       change_mode_to mode
       output
     end
@@ -44,7 +44,7 @@ def shell(cmd=nil, *args)
   else
     mode = _mode_?
     to_shell
-    output = send(cmd, *args)
+    output = exp_send(cmd, *args)
     change_mode_to mode
     output
   end

@@ -27,16 +27,15 @@ module Common
     @user
   end
 
-  def spawnee_password
-    if @pwd==nil
-      @pwd = Expect4r.cipher( ask("Enter your password:  ") { |q| q.echo = "X" } )
-    else
-      Expect4r.decipher(@pwd)
-    end
-  end
-
   def spawnee_prompt
     @ps1
+  end
+
+private
+
+  def spawnee_password
+    @pwd = Expect4r.cipher( ask("Enter your password:  ") { |q| q.echo = "X" } ) unless @pwd
+    Expect4r.decipher(@pwd)
   end
 
 end

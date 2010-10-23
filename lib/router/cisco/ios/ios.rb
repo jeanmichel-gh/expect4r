@@ -18,7 +18,7 @@ class Expect4r::Ios < ::Expect4r::BaseObject
   def enable
     @enable_password ||= @pwd
     @matches << [/^Password: $/, enable_password ]
-    send 'enable'
+    exp_send 'enable'
   end
   
   def enable_password

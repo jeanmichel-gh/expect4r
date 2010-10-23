@@ -133,10 +133,10 @@ module Expect4r
     raise 
   end
   
-  def puts(s)
-    print "#{s}\n"
+  def exp_puts(s)
+    exp_print "#{s}\n"
   end
-  def print(s)
+  def exp_print(s)
     exp_internal "print: #{s.inspect}, io_writer: #{@w}"
     return unless @w
     @w.print(s) and flush
@@ -165,7 +165,7 @@ module Expect4r
     end
   end
 
-  def send(lines, arg={})
+  def exp_send(lines, arg={})
     r=[]
     lines.each_line do |l|
       l = l.chomp("\n").chomp("\r").strip
@@ -173,7 +173,7 @@ module Expect4r
     end
     lines.size==1 ? r[0] : r
   end
-
+  
   def expect(match, ti=5)
     ev, buf = catch(:done) do
       @r.readbuf(ti) do |r|
@@ -222,7 +222,7 @@ module Expect4r
           throw(:done, [:ok, output])
         when /(user\s*name\s*|login):\s*$/i
           read_pipe._io_save no_echo, "match USERNAME"
-          puts spawnee_username
+          exp_puts spawnee_username
         when /password:\s*$/i
           read_pipe._io_save no_echo, "match PASSWORD"
           @w.print(spawnee_password+"\n") and flush
@@ -261,7 +261,7 @@ module Expect4r
     line = line.gsub(/\s+/,' ').gsub(/^\s+/,'') unless arg[:no_trim]
     return [[], :empty_line] unless line.size>0
     sync if arg[:sync]
-    puts line
+    exp_puts line
     output=[]
     rc, buf = catch(:done) do
       @r.readbuf(arg[:ti]) do |r|
@@ -283,10 +283,10 @@ module Expect4r
           putc ' '
         end
         
-        @matches.each { |match, send|  
+        @matches.each { |match, _send|  
           if r._io_string =~ match
              r._io_save no_echo, "match #{match}"
-            puts send
+            exp_puts _send
           end
         }
         
@@ -430,7 +430,7 @@ module Expect4r
       @pwd = if ciphered_pwd
         ciphered_pwd
       else
-        Expect4r.cipher(pwd)
+        Expect4r.cipher(pwd) if pwd
       end
       @ps1 = /(.*)(>|#|\$)\s*$/
       @more = / --More-- /

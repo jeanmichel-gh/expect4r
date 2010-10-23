@@ -8,7 +8,7 @@ module Modes
     if config
       mode = in?
       change_mode_to :config
-      output = send(config, arg)
+      output = exp_send(config, arg)
       output << commit
       change_mode_to mode
       output
@@ -23,13 +23,13 @@ module Modes
       change_mode_to :exec
     else
       if exec?
-        output = send(cmd, arg)
+        output = exp_send(cmd, arg)
       elsif config?
-        output = send("do #{cmd}", arg)
+        output = exp_send("do #{cmd}", arg)
       else
         mode = in?
         change_mode_to :exec
-        output = send(cmd, arg)
+        output = exp_send(cmd, arg)
         change_mode_to mode
         output
       end
@@ -43,11 +43,11 @@ module Modes
       to_shell
     else
       if shell?
-        output = send(cmd, arg)        
+        output = exp_send(cmd, arg)        
       elsif config?
-        output = send("do run #{cmd}", arg)
+        output = exp_send("do run #{cmd}", arg)
       elsif exec?
-        output = send("run #{cmd}", arg)
+        output = exp_send("run #{cmd}", arg)
       else
         raise RuntimeError # TODO
       end
