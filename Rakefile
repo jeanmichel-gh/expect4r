@@ -13,19 +13,19 @@ begin
     s.name = 'expect4r'
     s.authors = ['Jean-Michel Esnault']
     s.email = "jesnault@gmail.com"
-    s.summary = "A Ruby Library for interacting with IOS, IOX , and JUNOS CLI."
-    s.description = "Expect4r with the CLI of Cisco and Juniper routers with ease using Ruby."
+    s.summary = "Expect4r"
+    s.description = "A Ruby Library for interacting with Ios, IosXR, and Junos CLI."
     s.platform = Gem::Platform::RUBY
     s.executables = []
-    s.files = %w( README.rdoc ) + Dir["lib/**/*"] + Dir["test/**/*"] + ["examples/**/*"]
+    s.files = %w( LICENSE COPYING expect4r.rb README.rdoc ) + Dir["lib/**/*"] + ["examples/**/*"]
     s.test_files = Dir["test/**/*"]
-    s.has_rdoc = true
+    s.has_rdoc = false
     s.rdoc_options = ["--quiet", "--title", "Expect4r", "--line-numbers"]
     s.require_path = '.'
     s.required_ruby_version = ">= 1.8.7"
     s.add_dependency('highline', '>= 1.5.0')
     # s.homepage = "http://github.com/jesnault"
-    # s.rubyforge_project = 'interact'
+    # s.rubyforge_project = 'expect4'
   end
 rescue LoadError
   puts "Jeweler not available. Install it with: sudo gem install jeweler"
