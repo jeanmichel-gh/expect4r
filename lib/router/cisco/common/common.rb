@@ -1,6 +1,5 @@
 
-module Expect4r
-module Router
+module Expect4r::Router
 module CiscoCommon
   
   def config_lvl?
@@ -21,7 +20,6 @@ module CiscoCommon
     Regexp.last_match(1).size == 0
   end
     
-end
 end
 end
 

@@ -1,15 +1,4 @@
-require 'expect/io'
-require 'router/common'
-require 'router/error'
-require 'router/cisco/ios/ios'
-require 'router/cisco/ios/modes'
-require 'router/cisco/ios/termserver'
-require 'router/cisco/common/common'
-require 'router/cisco/common/show'
-require 'router/cisco/common/ping'
-require 'misc/passwd'
-
-class Ios < ::Expect4r::BaseObject
+class Expect4r::Ios < ::Expect4r::BaseObject
 
   include Expect4r
   include Expect4r::Router::Common

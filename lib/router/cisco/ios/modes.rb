@@ -47,8 +47,6 @@ module Modes
     end
   end
   
-  
-  
   def _mode_?
      if user? 
        :user

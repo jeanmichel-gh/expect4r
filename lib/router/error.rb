@@ -1,5 +1,4 @@
-module Expect4r
-module Router
+module Expect4r::Router
 module Error
   class RouterError < RuntimeError
     def initialize(rname, msg)
@@ -34,7 +33,7 @@ module Error
   end
 end
 end
-end
+
 
 if __FILE__ == $0
 

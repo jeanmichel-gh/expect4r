@@ -1,11 +1,4 @@
-
-require 'expect/io'
-require 'router/common'
-require 'router/error'
-require 'router/juniper/junos/modes'
-require 'router/juniper/junos/show'
-
-class J < ::Expect4r::BaseObject
+class Expect4r::J < ::Expect4r::BaseObject
   include Expect4r
   include Expect4r::Router::Error
   include Expect4r::Router::Common

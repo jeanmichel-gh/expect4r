@@ -1,14 +1,4 @@
-require 'expect/io'
-require 'router/common'
-require 'router/error'
-require 'router/cisco/iox/iox'
-require 'router/cisco/iox/modes'
-require 'router/cisco/common/common'
-require 'router/cisco/common/show'
-require 'router/cisco/common/ping'
-require 'misc/passwd'
-
-class Iox < ::Expect4r::BaseObject
+class Expect4r::Iox < ::Expect4r::BaseObject
   
   include Expect4r
   include Expect4r::Router

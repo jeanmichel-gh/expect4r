@@ -1,6 +1,4 @@
-module Expect4r
-module Router
-module Ios
+module Expect4r::Router::Ios
 module TermServer
   
   def powercycle(lineno)
@@ -12,7 +10,5 @@ module TermServer
     puts "clear line #{lineno}\n"
   end
   
-end
-end
 end
 end
