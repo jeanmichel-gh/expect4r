@@ -1,5 +1,6 @@
-require 'expect/io_interact'
+require 'expect/io'
 require 'router/common'
+require 'router/error'
 require 'router/cisco/ios/ios'
 require 'router/cisco/ios/modes'
 require 'router/cisco/ios/termserver'
@@ -8,30 +9,16 @@ require 'router/cisco/common/show'
 require 'router/cisco/common/ping'
 require 'misc/passwd'
 
-class Ios < ::Interact::InteractBaseObject
+class Ios < ::Expect4r::BaseObject
 
-  include Interact
-  include Interact::Router::Common
-  include Interact::Router::Common::Modes
-  include Interact::Router::Ios::Modes
-  include Interact::Router::CiscoCommon
-  include Interact::Router::CiscoCommon::Show
-  include Interact::Router::CiscoCommon::Ping
-  include Interact::Router::Ios::TermServer
-  
-  class IosError < RuntimeError
-    def initialize(txt)
-      @txt = txt
-    end
-  end
-  
-  class SyntaxError < IosError
-    def error_msg
-      "\nSyntaxError.\n'% Invalid Input' detected.\n=> #{@txt} <=\n"
-    end
-  end
-  class InvalidInputError < SyntaxError
-  end
+  include Expect4r
+  include Expect4r::Router::Common
+  include Expect4r::Router::Common::Modes
+  include Expect4r::Router::Ios::Modes
+  include Expect4r::Router::CiscoCommon
+  include Expect4r::Router::CiscoCommon::Show
+  include Expect4r::Router::CiscoCommon::Ping
+  include Expect4r::Router::Ios::TermServer
   
   def initialize(*args)
     super
@@ -47,7 +34,7 @@ class Ios < ::Interact::InteractBaseObject
   
   def enable_password
     @enable_password ||= @pwd  # FIXME
-    Interact.decipher(@pwd)    # password is ciphered ...
+    Expect4r.decipher(@pwd)    # password is ciphered ...
   end
   
   def login
@@ -59,7 +46,8 @@ class Ios < ::Interact::InteractBaseObject
 
   def putline(line,*args)
     output, rc = super
-    raise SyntaxError.new(line) if output.join =~ /\% Invalid input detected at/
+    return output unless output [-2][0] == '%'
+    raise SyntaxError.new(self.class.to_s,line)
     output
   end
     

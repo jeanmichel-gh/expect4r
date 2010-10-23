@@ -1,4 +1,4 @@
-module Interact
+module Expect4r
 module Router
 module Error
   class RouterError < RuntimeError
@@ -43,15 +43,15 @@ if __FILE__ == $0
   # require "router/error"
 
   class TestRouterError < Test::Unit::TestCase
-    include Interact::Router
+    include Expect4r::Router::Error
     def test_raise
       assert_raise(RouterError) {raise RouterError.new('paris','show bogus command')} 
       assert_err_msg 'paris [Error] : show bogus command', lambda {raise RouterError.new('paris','show bogus command')}
       assert_err_msg 'paris [SyntaxError] : show bogus command', lambda {raise SyntaxError.new('paris','show bogus command')}
       assert_err_msg 'paris [SemanticError] : show bogus command', lambda {raise SemanticError.new('paris','show bogus command')}
-      assert_err_msg 'paris [PingError] : failed to ping 1.1.1.1, expected/actual pct: 100/90', lambda {raise PingError.new('paris','1.1.1.1', 100, 90, 10, 9)}
-      assert_equal 100, exception(lambda {raise PingError.new('paris','1.1.1.1', 100, 90, 10, 9)}).exp_pct
-      assert_equal 'paris', exception(lambda {raise PingError.new('paris','1.1.1.1', 100, 90, 10, 9)}).rname
+      assert_err_msg 'paris [PingError] : failed to ping 1.1.1.1, expected/actual pct: 100/90', lambda {raise PingError.new('paris','1.1.1.1', 100, 90, 10, 9, '')}
+      assert_equal 100, exception(lambda {raise PingError.new('paris','1.1.1.1', 100, 90, 10, 9,'')}).exp_pct
+      assert_equal 'paris', exception(lambda {raise PingError.new('paris','1.1.1.1', 100, 90, 10, 9,'')}).rname
     end
 
     private
@@ -72,46 +72,6 @@ if __FILE__ == $0
       end
     end
 
-
-
-
   end
 
-end
-
-
-__END__
-
-
-class IoxError < RuntimeError
-  def initialize(txt)
-    @txt = txt
-  end
-end
-
-class SyntaxError < IoxError
-  def invalid_input
-    "\nCONFIG ERROR! (SyntaxError).\n'% Invalid Input' detected.\n=> #{@txt} <=\n"
-  end
-end
-
-class InvalidInputError < SyntaxError
-end
-
-class SemanticError < IoxError
-  def error_msg
-    %|\nCONFIG ERROR! (SemanticError).\nThe '% Failed to commit' error message was detected.\nAll changes made have been reverted.|
-  end
-  def show_configuration_failed
-    puts @txt
-  end
-end
-
-class CommitError < SemanticError
-end
-
-class PingError < ::Iox::IoxError
-  def error_message
-    %|\nPING FAILURE! \n#{@txt}\n|
-  end
 end

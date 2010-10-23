@@ -1,8 +1,6 @@
 require 'router/modes'
 
-module Interact
-module Router
-module Ios
+module Expect4r::Router::Ios
 module Modes
   
   def in?(mode=:none)
@@ -97,7 +95,5 @@ module Modes
     :user
   end
   
-end
-end
 end
 end

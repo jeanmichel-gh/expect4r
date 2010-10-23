@@ -1,8 +1,6 @@
 require 'router/modes'
 
-module Interact
-module Router
-module Junos
+module Expect4r::Router::Junos
 module Modes
 
 def config(stmts=nil, arg={})
@@ -107,8 +105,6 @@ def to_exec
   :exec
 end
 
-end
-end
 end
 end
 

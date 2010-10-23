@@ -1,4 +1,4 @@
-module Interact
+module Expect4r
 module Router
 module Common
 module Modes

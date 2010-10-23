@@ -1,7 +1,7 @@
-require 'expect/io_interact'
+require 'expect/io'
 
 class Shell
-  include Interact
+  include Expect4r
   def initialize()
     ENV['PROMPT_COMMAND']="date +%k:%m:%S"
     ENV['PS1']="shell>"
@@ -13,7 +13,3 @@ class Shell
     spawn @shell
   end
 end
-
-__END__
-
-shell = Shell.new

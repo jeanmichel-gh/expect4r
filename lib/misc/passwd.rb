@@ -1,7 +1,7 @@
 require 'rubygems'
 require 'openssl'
 require 'digest/sha1'
-module Interact
+module Expect4r
 
   def self.cipher(this, pwd='interact')
     c = OpenSSL::Cipher::Cipher.new("aes-256-cbc")

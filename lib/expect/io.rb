@@ -1,5 +1,6 @@
 require 'thread'
 require 'pty'
+require 'set'
 
 Thread.abort_on_exception=true
 
@@ -48,13 +49,37 @@ class IO
   end
 end
 
-module Interact
+module Expect4r
+
+  class ConnectionError < RuntimeError
+    def initialize(output)
+      @output = output
+    end
+    def err_msg
+      "Connection Error: #{@output}"
+    end
+  end
+
+  class TimeoutError < RuntimeError
+    def initialize(output, elapsed)
+      @output, @elapsed = output, elapsed
+    end
+    def err_msg
+      "Timeout Error: #{@output}"
+    end
+  end
 
   class NoChildError < RuntimeError
   end
   class SpawnError < RuntimeError
+    def initialize(cmd)
+      @cmd = cmd
+    end
+    def err_msg
+      "Error: #{msg}"
+    end
   end
-  class InteractIO_Error < RuntimeError
+  class Expect4rIO_Error < RuntimeError
   end
 
   def child_exit
@@ -91,7 +116,7 @@ module Interact
         end
       end
     rescue => e
-      raise SpawnError
+      raise SpawnError.new(cmd)
     end
   end
   
@@ -189,7 +214,7 @@ module Interact
       @r.readbuf(timeout) do |read_pipe|
         if read_pipe._io_exit?
           exp_internal "readbuf: _io_exit?"
-          throw :done, [ :timeout,  output]
+          throw :done, [ :abort,  output]
         end
         case read_pipe._io_string
         when spawnee_prompt
@@ -211,10 +236,13 @@ module Interact
       end
     end
     case ev
-    when :timeout
-      p "TIMEOUT/ERROR: #{(Time.now - t0)}"
-      logout
-      raise RuntimeError # for now....  
+    when :abort
+      elapsed = Time.now - t0
+      if elapsed < timeout
+        raise ConnectionError.new(c)
+      else
+        raise TimeoutError.new(c, elapsed)
+      end
     else
       @lp = buf.last
     end
@@ -245,10 +273,9 @@ module Interact
         when @ps1, @ps1_bis
           unless r._io_more?
             r._io_save false, "matching PROMPT"
-            exp_internal "returning #{r._io_buf1.inspect}"
             throw(:done, [:ok, r._io_buf1])
           end
-          exp_internal "MORE DATA TO READ"
+          exp_internal "more..."
         when /(.+)\r\n/, "\r\n"
           r._io_save no_echo, "matching EOL", "\r\n"
         when @more
@@ -267,8 +294,12 @@ module Interact
     end
     case rc
     when :abort
-      exp_internal "putline abort: #{caller[0]}"
-      raise InteractIO_Error
+      elapsed = Time.now - t0
+      if elapsed < timeout
+        raise ConnectionError.new(cmd)
+      else
+        raise TimeoutError.new(cmd, elapsed)
+      end
     else
       @lp = buf.last
     end
@@ -365,8 +396,8 @@ module Kernel
   exp_debug :disable
 end
 
-module Interact
-  class InteractBaseObject
+module Expect4r
+  class BaseObject
     class << self
       def new_telnet(*args)
         new :telnet, *args
@@ -394,11 +425,11 @@ module Interact
       end
       @host, port = host.split
       @port = port.to_i
-      @pwd  = Interact.cipher(pwd) if pwd
+      @pwd  = pwd
       @ps1 = /(.*)(>|#|\$)\s*$/
       @more = / --More-- /
-      @matches=[]
-      InteractBaseObject.add(self)
+      @matches=Set.new
+      BaseObject.add(self)
       self
     end
   end
@@ -407,31 +438,30 @@ end
 if __FILE__ != $0
 
   at_exit { 
-    if Interact::InteractBaseObject.routers
-      Interact::InteractBaseObject.routers.each { |r| r.logout if r.respond_to? :logout }
+    if Expect4r::BaseObject.routers
+      Expect4r::BaseObject.routers.each { |r| r.logout if r.respond_to? :logout }
     end
-    puts "at_exit function" 
   }
   
 else
 
   require "test/unit"
 
-  class Interact::InteractBaseObject
+  class Expect4r::BaseObject
     def initialize
-      Interact::InteractBaseObject.add(self)
+      Expect4r::BaseObject.add(self)
     end
   end
 
-  class TestRouterInteractBaseObject < Test::Unit::TestCase
-    include Interact
+  class TestRouterBaseObject < Test::Unit::TestCase
+    include Expect4r
 
     def test_add
-      assert [], InteractBaseObject.routers
-      InteractBaseObject.new
-      assert 1, InteractBaseObject.routers.size
-      InteractBaseObject.new 
-      assert 1, InteractBaseObject.routers.size
+      assert [], BaseObject.routers
+      BaseObject.new
+      assert 1, BaseObject.routers.size
+      BaseObject.new 
+      assert_equal 2, BaseObject.routers.size
     end
   end
 

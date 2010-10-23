@@ -1,54 +1,17 @@
 
-require 'expect/io_interact'
+require 'expect/io'
 require 'router/common'
+require 'router/error'
 require 'router/juniper/junos/modes'
+require 'router/juniper/junos/show'
 
-class J < ::Interact::InteractBaseObject
-  
-  class JError < RuntimeError
-    def initialize(txt)
-      @txt = txt
-    end
-  end
-  class SyntaxError < JError
-    def invalid_input
-      "\nSyntaxError.\n'% Invalid Input' detected.\n=> #{@txt} <=\n"
-    end
-  end
-
-  class SemanticError < JError
-    def error_msg
-      %|\nSemanticError.\nThe '% Failed to commit' error message was detected.\nAll changes made have been reverted.|
-    end
-    def show_configuration_failed
-      puts @txt
-    end
-  end
-  
-  class CommitError < SemanticError
-  end
-  
-  class PingError < JError
-    def error_msg
-      %|\nPING FAILURE! \n#{@txt}\n|
-    end
-  end
-  
-  
-  class Error < RuntimeError
-  end
-  class CliError < Error
-    def initialize(s)
-      super s.gsub(/\r/,"\n")
-    end
-  end
-end
-
-class J 
-  include Interact
-  include Interact::Router::Common
-  include Interact::Router::Common::Modes
-  include Interact::Router::Junos::Modes
+class J < ::Expect4r::BaseObject
+  include Expect4r
+  include Expect4r::Router::Error
+  include Expect4r::Router::Common
+  include Expect4r::Router::Common::Modes
+  include Expect4r::Router::Junos::Modes
+  include Expect4r::Router::Junos::Show
   
   def initialize(*args)
     super
@@ -69,7 +32,7 @@ class J
   
   def putline(line,arg={})
     o, rc = super
-    raise SyntaxError.new(o.join("\n")) if o.join =~ /(unknown command|syntax error)\./
+    raise SyntaxError.new(self.class.to_s, line) if o.join =~ /(unknown command|syntax error)\./
     o
   end
   
@@ -83,10 +46,11 @@ class J
   
   def commit(arg={})
     return unless config?
+    @matches << [/Exit with uncommitted changes.+\(yes\)/, 'yes']
     output = putline "commit", arg
-    if /\% Failed to commit/.match(output.join)
+    if /error: configuration check-out failed/.match(output.join)
       putline 'rollback'
-      raise CommitError.new(output)
+      raise SemanticError.new(self.class.to_s, output)
     end
     output
   end

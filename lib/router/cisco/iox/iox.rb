@@ -1,4 +1,4 @@
-require 'expect/io_interact'
+require 'expect/io'
 require 'router/common'
 require 'router/error'
 require 'router/cisco/iox/iox'
@@ -8,16 +8,16 @@ require 'router/cisco/common/show'
 require 'router/cisco/common/ping'
 require 'misc/passwd'
 
-class Iox < ::Interact::InteractBaseObject
+class Iox < ::Expect4r::BaseObject
   
-  include Interact
-  include Interact::Router
-  include Interact::Router::Common
-  include Interact::Router::Common::Modes
-  include Interact::Router::CiscoCommon
-  include Interact::Router::Iox::Modes
-  include Interact::Router::CiscoCommon::Show
-  include Interact::Router::CiscoCommon::Ping
+  include Expect4r
+  include Expect4r::Router
+  include Expect4r::Router::Common
+  include Expect4r::Router::Common::Modes
+  include Expect4r::Router::CiscoCommon
+  include Expect4r::Router::Iox::Modes
+  include Expect4r::Router::CiscoCommon::Show
+  include Expect4r::Router::CiscoCommon::Ping
   
   def initialize(*args)
     super

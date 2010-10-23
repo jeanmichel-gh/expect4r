@@ -1,8 +1,6 @@
 require 'router/modes'
 
-module Interact
-module Router
-module Iox
+module Expect4r::Router::Iox
 module Modes
 
   def config(config=nil, arg={})
@@ -99,7 +97,5 @@ module Modes
     :exec
   end
 
-end
-end
 end
 end

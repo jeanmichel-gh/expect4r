@@ -1,10 +1,10 @@
 require 'router/error'
 
-module Interact
+module Expect4r
 module Router
 module CiscoCommon
 module Ping
-  include ::Interact::Router::Error
+  include ::Expect4r::Router::Error
   def ping(arg={})
     if arg.is_a?(Hash)
       arg = {:pct_success=>100}.merge(arg) 
@@ -51,16 +51,16 @@ irb(main):110:0> p @x.ping :dest=>'172.20.186.101'
 => nil
 
 irb(main):133:0> p @x.ping :dest=>'172.20.186.101', :pct_success=>120
-Exception `Interact::Router::Iox::Ping::PingError' at ./lib/router/cisco/iox/ping.rb:29 - Success rate is 100 percent (5/5)
-Exception `Interact::Router::Iox::Ping::PingError' at /System/Library/Frameworks/Ruby.framework/Versions/1.8/usr/lib/ruby/1.8/irb/workspace.rb:81 - Success rate is 100 percent (5/5)
-Interact::Router::Iox::Ping::PingError: Success rate is 100 percent (5/5)
+Exception `Expect4r::Router::Iox::Ping::PingError' at ./lib/router/cisco/iox/ping.rb:29 - Success rate is 100 percent (5/5)
+Exception `Expect4r::Router::Iox::Ping::PingError' at /System/Library/Frameworks/Ruby.framework/Versions/1.8/usr/lib/ruby/1.8/irb/workspace.rb:81 - Success rate is 100 percent (5/5)
+Expect4r::Router::Iox::Ping::PingError: Success rate is 100 percent (5/5)
 	from ./lib/router/cisco/iox/ping.rb:29:in `ping'
 	from (irb):133
 	from (null):0
 irb(main):134:0> p @x.ping :dest=>'172.20.186.101', :pct_success=>101
-Exception `Interact::Router::Iox::Ping::PingError' at ./lib/router/cisco/iox/ping.rb:29 - Success rate is 100 percent (5/5)
-Exception `Interact::Router::Iox::Ping::PingError' at /System/Library/Frameworks/Ruby.framework/Versions/1.8/usr/lib/ruby/1.8/irb/workspace.rb:81 - Success rate is 100 percent (5/5)
-Interact::Router::Iox::Ping::PingError: Success rate is 100 percent (5/5)
+Exception `Expect4r::Router::Iox::Ping::PingError' at ./lib/router/cisco/iox/ping.rb:29 - Success rate is 100 percent (5/5)
+Exception `Expect4r::Router::Iox::Ping::PingError' at /System/Library/Frameworks/Ruby.framework/Versions/1.8/usr/lib/ruby/1.8/irb/workspace.rb:81 - Success rate is 100 percent (5/5)
+Expect4r::Router::Iox::Ping::PingError: Success rate is 100 percent (5/5)
 	from ./lib/router/cisco/iox/ping.rb:29:in `ping'
 	from (irb):134
 	from (null):0

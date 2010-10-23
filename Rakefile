@@ -13,16 +13,17 @@ begin
     s.name = 'expect4r'
     s.authors = ['Jean-Michel Esnault']
     s.email = "jesnault@gmail.com"
-    s.summary = "A Ruby Library for interacting with IOX and JUNOS CLI."
-    s.description = "Interact with the CLI of Cisco and Juniper routers with ease using Ruby."
+    s.summary = "A Ruby Library for interacting with IOS, IOX , and JUNOS CLI."
+    s.description = "Expect4r with the CLI of Cisco and Juniper routers with ease using Ruby."
     s.platform = Gem::Platform::RUBY
     s.executables = []
     s.files = %w( README.rdoc ) + Dir["lib/**/*"] + Dir["test/**/*"] + ["examples/**/*"]
     s.test_files = Dir["test/**/*"]
-    s.has_rdoc = false
-    s.rdoc_options = ["--quiet", "--title", "Interact", "--line-numbers"]
+    s.has_rdoc = true
+    s.rdoc_options = ["--quiet", "--title", "Expect4r", "--line-numbers"]
     s.require_path = '.'
-    s.required_ruby_version = ">= 1.8.6"
+    s.required_ruby_version = ">= 1.8.7"
+    s.add_dependency('highline', '>= 1.5.0')
     # s.homepage = "http://github.com/jesnault"
     # s.rubyforge_project = 'interact'
   end
@@ -66,7 +67,7 @@ end
 Rake::RDocTask.new do |t|
   t.rdoc_dir = 'rdoc'
   t.rdoc_files.include("lib/**/*.rb")
-  t.options =  ["--quiet", "--title", "Interact", "--line-numbers"] 
+  t.options =  ["--quiet", "--title", "Expect4r", "--line-numbers"] 
   t.options << '--fileboxes'
 end
 

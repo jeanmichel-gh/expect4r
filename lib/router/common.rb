@@ -1,9 +1,9 @@
 
 require 'rubygems'
 require 'highline/import'
+require 'misc/passwd'
 
-module Interact
-module Router
+module Expect4r::Router
 module Common
 
   def console?
@@ -29,9 +29,9 @@ module Common
 
   def spawnee_password
     if @pwd==nil
-      @pwd = Interact.cipher( ask("Enter your password:  ") { |q| q.echo = "X" } )
+      @pwd = Expect4r.cipher( ask("Enter your password:  ") { |q| q.echo = "X" } )
     else
-      Interact.decipher(@pwd)
+      Expect4r.decipher(@pwd)
     end
   end
 
@@ -39,6 +39,5 @@ module Common
     @ps1
   end
 
-end
 end
 end
