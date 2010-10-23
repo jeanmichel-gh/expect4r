@@ -28,10 +28,8 @@ class Iox < ::Interact::InteractBaseObject
   def login
     super(spawnee)
     config 'no logging console' if port>0
-    exec %\
-      terminal len 0
-      terminal width 0
-    \
+    exec "terminal len 0\nterminal width 0"
+    self
   end
   
   def commit(arg={})

@@ -59,10 +59,8 @@ class J
   def login
     ENV['TERM']='dumb'
     super(spawnee)
-    send %{
-      set cli screen-length 0
-      # set cli complete-on-space off # there is a bug with logical router
-    }
+    exec 'set cli screen-length 0'
+    self
   end
   
   def console?

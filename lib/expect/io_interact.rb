@@ -83,11 +83,11 @@ module Interact
           end
         end
       end
+      @thread.priority = -2
       # STDOUT.puts "*** #{child_exited} ***"
       unless child_exited
         while @r.nil?
-          sleep(0.5) 
-          p 'HERE....'
+          sleep(0.05) 
         end
       end
     rescue => e
@@ -416,7 +416,6 @@ if __FILE__ != $0
 else
 
   require "test/unit"
-
 
   class Interact::InteractBaseObject
     def initialize

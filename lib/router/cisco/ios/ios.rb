@@ -53,10 +53,8 @@ class Ios < ::Interact::InteractBaseObject
   def login
     super(spawnee)
     enable
-    send %{
-      term len 0
-      term width 0
-    }
+    exec "term len 0\nterm width 0"
+    self
   end
 
   def putline(line,*args)
