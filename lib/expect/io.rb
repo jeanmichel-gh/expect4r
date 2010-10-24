@@ -60,7 +60,7 @@ module Expect4r
     end
   end
 
-  class TimeoutError < RuntimeError
+  class ExpTimeoutError < RuntimeError
     def initialize(output, elapsed)
       @output, @elapsed = output, elapsed
     end
@@ -134,7 +134,7 @@ module Expect4r
   end
   
   def exp_puts(s)
-    exp_print "#{s}\n"
+    exp_print "#{s}\r"
   end
   def exp_print(s)
     exp_internal "print: #{s.inspect}, io_writer: #{@w}"
@@ -164,7 +164,12 @@ module Expect4r
       exp_internal e.to_s
     end
   end
-
+  
+  def putcr
+    putline '', :no_trim=>true, :no_echo=>true
+    nil
+  end
+  
   def exp_send(lines, arg={})
     r=[]
     lines.each_line do |l|
@@ -220,12 +225,12 @@ module Expect4r
         when spawnee_prompt
           read_pipe._io_save false, "match PROMPT"
           throw(:done, [:ok, output])
-        when /(user\s*name\s*|login):\s*$/i
+        when /(user\s*name\s*|login):\r*$/i
           read_pipe._io_save no_echo, "match USERNAME"
           exp_puts spawnee_username
         when /password:\s*$/i
           read_pipe._io_save no_echo, "match PASSWORD"
-          @w.print(spawnee_password+"\n") and flush
+          @w.print(spawnee_password+"\r") and flush
         when /Escape character is/
           read_pipe._io_save no_echo, "match Escape char"
           io_escape_char_cb
@@ -241,7 +246,7 @@ module Expect4r
       if elapsed < timeout
         raise ConnectionError.new(c)
       else
-        raise TimeoutError.new(c, elapsed)
+        raise ExpTimeoutError.new(c, elapsed)
       end
     else
       @lp = buf.last
@@ -251,16 +256,21 @@ module Expect4r
   end
   
   private
-
+ 
+  #FIXME ? putline to send_cmd ? 
+  # hide putline and expose cmd
   def putline(line, arg={})
     raise NoChildError if child_exited?
         
     arg = {:ti=>13, :no_echo=>false, :debug=>0, :sync=> false, :no_trim=>false}.merge(arg)
     no_echo = arg[:no_echo]
     ti = arg[:ti]
-    line = line.gsub(/\s+/,' ').gsub(/^\s+/,'') unless arg[:no_trim]
-    return [[], :empty_line] unless line.size>0
+    unless arg[:no_trim]
+      line = line.gsub(/\s+/,' ').gsub(/^\s+/,'') unless arg[:no_trim]
+      return [[], :empty_line] unless line.size>0
+    end
     sync if arg[:sync]
+    t0 = Time.now
     exp_puts line
     output=[]
     rc, buf = catch(:done) do
@@ -295,10 +305,10 @@ module Expect4r
     case rc
     when :abort
       elapsed = Time.now - t0
-      if elapsed < timeout
-        raise ConnectionError.new(cmd)
+      if elapsed < ti
+        raise ConnectionError.new(line)
       else
-        raise TimeoutError.new(cmd, elapsed)
+        raise ExpTimeoutError.new(line, elapsed)
       end
     else
       @lp = buf.last

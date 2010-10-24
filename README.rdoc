@@ -1,0 +1,96 @@
+Expect4r is a library that enables a ruby program to 'talk' to routers following a written ruby script.
+You talk to routers by connecting to them using ssh or telnet and send exec or config command and collect router output than can be parsed using ruby.
+
+
+* Connect to routers
+
+  Ios:
+
+	ios = Ios.new_telnet :host=> "hostname", :user=> "username", :pwd => "password"
+	ios.login
+
+  IOS-XR:
+
+	iox = Iox.new_telnet 'host', 'username', 'password'
+	iox.login
+
+  Junos:
+
+	j = J.new_telnet :host=> '', :user=> 'lab', :pwd => 'lab'
+	j.login
+
+* Push configigurations to routers
+
+    ios.config 'no logging console'
+
+    ios.config %{
+		interface loopback0
+		  shutdown
+	}
+	
+	iox.config
+	iox.exp_send 'interface GigabitEthernet0/2/0/0'
+	iox.exp_send 'desc to switch port 13'
+	iox.exp_send 'ipv4 address 190.0.0.9 255.255.255.252'
+	iox.exp_send 'no shut'
+	iox.commit
+	
+
+	j.config %{
+	  edit logical-router Orleans protocols bgp
+	    edit group session-to-200
+	      set type external
+	      set peer-as 200
+	      set neighbor 40.0.2.1 peer-as 200
+		  edit logical-routers router1
+	}
+
+* exec commands
+
+    junos.exec 'set cli screen-length 0'
+    iox.exec "terminal len 0\nterminal width 0"
+
+
+* exec shell commands
+
+    output = iox.shell 'pidin'
+
+
+* interact with CLI.
+
+   irb> r.interact
+
+   #
+   # ^Z to terminate.
+   #
+
+   router#clear line 2
+   [confirm]
+    [OK]
+   router# ^Z
+   => nil
+   irb> 
+
+
+	irb(main):210:0* j.interact
+	
+	#
+	# ^Z to terminate.
+	#
+	
+	jme@router> configure 
+	Entering configuration mode
+	The configuration has been changed but not committed
+	
+	[edit]
+	jme@router# rollback 
+	load complete
+	
+	[edit]
+	jme@router# show | compare 
+	
+	[edit]
+	jme@router# ^Z
+	=> nil
+	irb(main):211:0> 
+

@@ -1,5 +1,5 @@
 class Expect4r::Ios < ::Expect4r::BaseObject
-
+  
   include Expect4r
   include Expect4r::Router::Common
   include Expect4r::Router::Common::Modes
@@ -17,8 +17,13 @@ class Expect4r::Ios < ::Expect4r::BaseObject
   
   def enable
     @enable_password ||= @pwd
-    @matches << [/^Password: $/, enable_password ]
+    enable_pwd = [/^Password: $/, enable_password]
+    @matches << enable_pwd
     exp_send 'enable'
+  rescue 
+    raise
+  ensure
+    @matches.delete enable_pwd
   end
   
   def enable_password
@@ -32,12 +37,33 @@ class Expect4r::Ios < ::Expect4r::BaseObject
     exec "term len 0\nterm width 0"
     self
   end
-
+  
   def putline(line,*args)
     output, rc = super
-    return output unless output [-2][0] == '%'
+    p output
+    return output unless error?(output)
     raise SyntaxError.new(self.class.to_s,line)
-    output
   end
-    
+  
+  private
+  
+  if "a"[0]==97
+    def string_start_with_pct_char?(s)
+      p "1.8: s= #{s.inspect}"
+      return unless s
+      p 'checking'
+      s[0].chr == '%' if s[0]
+    end
+  else
+    def string_start_with_pct_char?(s)
+      return unless s
+      p 'checking'
+      s[0] == '%'
+    end
+  end
+  
+  def error?(output)
+    string_start_with_pct_char?(output[-2]) || string_start_with_pct_char?(output[-3])
+  end
+  
 end

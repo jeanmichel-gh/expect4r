@@ -7,7 +7,13 @@ module TermServer
     config "line #{lineno}\nno modem dtr\nno modem dtr-active"
   end
   def clear_line(lineno)
-    exp_puts "clear line #{lineno}\n"
+    confirm = [/\[confirm\]/, ""]
+    @matches << confirm
+    putline "clear line #{lineno}"
+  rescue Expect4r::Router::Error::SyntaxError => e
+    puts e.err_msg
+  ensure
+    @matches.delete confirm
   end
   
 end

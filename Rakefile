@@ -17,11 +17,11 @@ begin
     s.description = "A Ruby Library for interacting with Ios, IosXR, and Junos CLI."
     s.platform = Gem::Platform::RUBY
     s.executables = []
-    s.files = %w( LICENSE COPYING expect4r.rb README.rdoc ) + Dir["lib/**/*"] + ["examples/**/*"]
+    s.files = %w( LICENSE COPYING README.rdoc ) + Dir["lib/**/*"] + ["examples/**/*"]
     s.test_files = Dir["test/**/*"]
     s.has_rdoc = false
     s.rdoc_options = ["--quiet", "--title", "Expect4r", "--line-numbers"]
-    s.require_path = '.'
+    s.require_path = 'lib'
     s.required_ruby_version = ">= 1.8.7"
     s.add_dependency('highline', '>= 1.5.0')
     # s.homepage = "http://github.com/jesnault"
