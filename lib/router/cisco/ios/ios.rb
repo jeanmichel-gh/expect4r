@@ -40,7 +40,6 @@ class Expect4r::Ios < ::Expect4r::BaseObject
   
   def putline(line,*args)
     output, rc = super
-    p output
     return output unless error?(output)
     raise SyntaxError.new(self.class.to_s,line)
   end
@@ -49,15 +48,12 @@ class Expect4r::Ios < ::Expect4r::BaseObject
   
   if "a"[0]==97
     def string_start_with_pct_char?(s)
-      p "1.8: s= #{s.inspect}"
       return unless s
-      p 'checking'
       s[0].chr == '%' if s[0]
     end
   else
     def string_start_with_pct_char?(s)
       return unless s
-      p 'checking'
       s[0] == '%'
     end
   end

@@ -14,7 +14,7 @@ begin
     s.authors = ['Jean-Michel Esnault']
     s.email = "jesnault@gmail.com"
     s.summary = "Expect4r"
-    s.description = "A Ruby Library for interacting with Ios, IosXR, and Junos CLI."
+    s.description = "A Ruby Library for interacting with Ios, Ios-XR, and Junos CLI."
     s.platform = Gem::Platform::RUBY
     s.executables = []
     s.files = %w( LICENSE COPYING README.rdoc ) + Dir["lib/**/*"] + ["examples/**/*"]
