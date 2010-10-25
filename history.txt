@@ -1,0 +1,32 @@
+=== 0.0.1.dev  Mon Oct 25 11:21:23 -0700 2010
+
+ * Initial release.
+
+   While this is still work in progress and buggy, it already allows to:
+
+    + login to a Cisco router running IOS or IOS-XR or a Juniper router running Junos.
+    + push configuration using #config() method
+    + pull states using #show() method
+    + check connectivity state using #ping() (not yet implemented for J class)
+   
+   Provides following: 
+
+    Classes:
+      Expect4r::Iox
+      Expect4r::Iox
+      Expect4r::J
+
+    Class methods:
+      new
+      new_ssh
+      new_telnet
+
+    Instance methods:
+      login
+      logout
+      config
+      show
+      shell
+      exec
+      in?
+      ping
