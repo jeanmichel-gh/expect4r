@@ -3,20 +3,13 @@ module Show
 
   def show(s, arg={})
     output = []
+    nlines = 0
     s.each_line { |l|
+      next unless l.strip.size>0
       output << exec("show #{l}", arg) if l.strip.size>0
+      nlines +=1
     }
-    output
-  end
-  
-  def method_missing(name, *args, &block)
-    if name.to_s =~ /^show_/
-      cmd = name.to_s.split('_').join(' ') + args.join(' ')
-      cmd.gsub!(/running config/, 'running-config')
-      output = __send__ :exec, cmd, *args
-    else
-      super
-    end
+    nlines > 1 ? output : output[0]
   end
   
 end

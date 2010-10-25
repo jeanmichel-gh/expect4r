@@ -52,8 +52,8 @@ end
 module Expect4r
 
   class ConnectionError < RuntimeError
-    def initialize(output)
-      @output = output
+    def initialize(*args)
+      @output = args[0]
     end
     def err_msg
       "Connection Error: #{@output}"
@@ -61,22 +61,20 @@ module Expect4r
   end
 
   class ExpTimeoutError < RuntimeError
-    def initialize(output, elapsed)
-      @output, @elapsed = output, elapsed
+    def initialize(*args)
+      @output, @timeout = args
     end
     def err_msg
-      "Timeout Error: #{@output}"
+      "Timeout Error: timeout= #{@timeout}: #{@output}"
     end
   end
 
-  class NoChildError < RuntimeError
-  end
   class SpawnError < RuntimeError
-    def initialize(cmd)
-      @cmd = cmd
+    def initialize(*args)
+      @cmd = args[0]
     end
     def err_msg
-      "Error: #{msg}"
+      "Spawn Error: #{@cmd}"
     end
   end
   class Expect4rIO_Error < RuntimeError
@@ -96,7 +94,6 @@ module Expect4r
   def spawn(cmd)
     begin
       child_exited = false
-      # STDOUT.puts "*** FALSE ***"
       @thread = Thread.new do
         PTY.spawn(cmd) do |pipe_read, pipe_write, pid|
           @r, @w, @pid = pipe_read, pipe_write, pid
@@ -109,7 +106,6 @@ module Expect4r
         end
       end
       @thread.priority = -2
-      # STDOUT.puts "*** #{child_exited} ***"
       unless child_exited
         while @r.nil?
           sleep(0.05) 
@@ -122,6 +118,7 @@ module Expect4r
   
   def logout
     child_exit
+    @pid
   end
   
   def putc(c)
@@ -192,7 +189,7 @@ module Expect4r
       end
     end
     exp_internal "#{ev.inspect} buf: #{buf.inspect}"
-    raise RuntimeError, buf if ev == :timeout
+    raise ExpTimeoutError.new(buf, ti) if ev == :timeout
     [buf, ev]
   end
 
@@ -244,9 +241,10 @@ module Expect4r
     when :abort
       elapsed = Time.now - t0
       if elapsed < timeout
+        child_exit
         raise ConnectionError.new(c)
       else
-        raise ExpTimeoutError.new(c, elapsed)
+        raise ExpTimeoutError.new(c, timeout)
       end
     else
       @lp = buf.last
@@ -260,8 +258,8 @@ module Expect4r
   #FIXME ? putline to send_cmd ? 
   # hide putline and expose cmd
   def putline(line, arg={})
-    raise NoChildError if child_exited?
-        
+    raise ConnectionError.new(line) if child_exited?
+    
     arg = {:ti=>13, :no_echo=>false, :debug=>0, :sync=> false, :no_trim=>false}.merge(arg)
     no_echo = arg[:no_echo]
     ti = arg[:ti]
@@ -306,6 +304,7 @@ module Expect4r
     when :abort
       elapsed = Time.now - t0
       if elapsed < ti
+        child_exit
         raise ConnectionError.new(line)
       else
         raise ExpTimeoutError.new(line, elapsed)

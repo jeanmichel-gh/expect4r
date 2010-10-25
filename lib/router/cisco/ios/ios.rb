@@ -1,3 +1,5 @@
+require 'router/cisco/common/common'
+
 class Expect4r::Ios < ::Expect4r::BaseObject
   
   include Expect4r
@@ -59,7 +61,8 @@ class Expect4r::Ios < ::Expect4r::BaseObject
   end
   
   def error?(output)
-    string_start_with_pct_char?(output[-2]) || string_start_with_pct_char?(output[-3])
+    string_start_with_pct_char?(output[-2]) || 
+    string_start_with_pct_char?(output[-3])
   end
   
 end
