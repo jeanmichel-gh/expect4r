@@ -10,7 +10,7 @@ class Expect4r::Iox < ::Expect4r::BaseObject
   include Expect4r::Router::CiscoCommon
   include Expect4r::Router::Iox::Modes
   include Expect4r::Router::CiscoCommon::Show
-  include Expect4r::Router::CiscoCommon::Ping
+  include Expect4r::Router::Iox::Ping
   
   def initialize(*args)
     super

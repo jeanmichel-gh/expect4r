@@ -133,6 +133,7 @@ module Expect4r
   def exp_puts(s)
     exp_print "#{s}\r"
   end
+  
   def exp_print(s)
     exp_internal "print: #{s.inspect}, io_writer: #{@w}"
     return unless @w

@@ -5,6 +5,7 @@ class Expect4r::J < ::Expect4r::BaseObject
   include Expect4r::Router::Common::Modes
   include Expect4r::Router::Junos::Modes
   include Expect4r::Router::Junos::Show
+  include Expect4r::Router::Junos::Ping
   
   def initialize(*args)
     super

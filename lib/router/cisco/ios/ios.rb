@@ -8,7 +8,7 @@ class Expect4r::Ios < ::Expect4r::BaseObject
   include Expect4r::Router::Ios::Modes
   include Expect4r::Router::CiscoCommon
   include Expect4r::Router::CiscoCommon::Show
-  include Expect4r::Router::CiscoCommon::Ping
+  include Expect4r::Router::Ios::Ping
   include Expect4r::Router::Ios::TermServer
   
   def initialize(*args)

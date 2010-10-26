@@ -21,18 +21,20 @@ module Expect4r
     end
     module CiscoCommon
       autoload :Show, 'router/cisco/common/show'
-      autoload :Ping, 'router/cisco/common/ping'
     end
     module Ios
       autoload :TermServer, 'router/cisco/ios/termserver'
       autoload :Modes, 'router/cisco/ios/modes'
+      autoload :Ping,  'router/cisco/ios/ping'
     end
     module Iox
       autoload :Modes, 'router/cisco/iox/modes'
+      autoload :Ping,  'router/cisco/iox/ping'
     end
     module Junos
       autoload :Modes, 'router/juniper/junos/modes'
-      autoload :Show, 'router/juniper/junos/show'
+      autoload :Show,  'router/juniper/junos/show'
+      autoload :Ping,  'router/juniper/junos/ping'
     end
   end
 

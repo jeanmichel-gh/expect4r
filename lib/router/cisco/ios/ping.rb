@@ -1,6 +1,6 @@
 require 'router/error'
 
-module Expect4r::Router::CiscoCommon
+module Expect4r::Router::Ios
 module Ping
   include ::Expect4r::Router::Error
   def ping(arg={})
