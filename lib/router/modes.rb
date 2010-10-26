@@ -2,6 +2,21 @@ module Expect4r
 module Router
 module Common
 module Modes
+  
+  # Adds a <tt>in?</tt> mixin.
+  #
+  # Examples:
+  #
+  #  irb(main):007:0> iox.in?
+  #  => :exec
+  #  irb(main):008:0> iox.config
+  #  => :config
+  #  irb(main):009:0> iox.in?
+  #  => :config
+  #  irb(main):010:0> iox.shell
+  #  => :shell
+  #  irb(main):011:0> iox.in?
+  #  => :shell
   def in?(mode=:none)
     login unless connected?
     case mode

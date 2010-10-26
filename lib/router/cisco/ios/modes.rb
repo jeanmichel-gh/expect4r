@@ -3,6 +3,10 @@ require 'router/modes'
 module Expect4r::Router::Ios
 module Modes
   
+  # Adds a <tt>in?</tt> mixin.
+  #
+  # Returns the mode the router is in:  :user, :exec, :config
+  #
   def in?(mode=:none)
     login unless connected?
     case mode
@@ -61,10 +65,16 @@ module Modes
     @lp =~ /\(config(|.+)\)/
   end
   
+  #
+  # returns <tt>true</tt> if router is in <tt>:exec</tt> (enabled) mode,  <tt>false</tt> otherwise.
+  #
   def exec?
     ! user? and ! config?
   end
   
+  #
+  # returns <tt>true</tt> if router is in <tt>:user</tt> mode,  <tt>false</tt> otherwise.
+  #
   def user?
     @lp =~ /.+>\s*$/
   end

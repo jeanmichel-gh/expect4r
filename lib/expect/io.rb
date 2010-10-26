@@ -425,6 +425,21 @@ module Expect4r
     attr_reader :host, :user, :method, :port
     alias :username :user
     alias :hostname :host
+    # Adds a login to a Expect4r::BaseObject"
+    #
+    # Constructor: 
+    # * <tt>new</tt>  <method>, <username>, <password>, [port_number]
+    # * <tt>new</tt>  <method>, options={}
+    #
+    # Options are:  
+    # * <tt>:host</tt> or <tt>:hostname</tt>
+    # * <tt>:user</tt> or <tt>:username</tt>
+    # * <tt>:pwd</tt> or <tt>:password</tt>
+    #
+    # Examples:
+    #   new :telnet, :user=> 'lab', :password=>'lab'
+    #   new :ssh, :user=> 'jme'
+    #
     def initialize(*args)
       ciphered_pwd=nil
       if args.size>2 and args[1].is_a?(String)

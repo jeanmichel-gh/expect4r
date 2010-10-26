@@ -2,6 +2,16 @@
 module Expect4r::Router
 module CiscoCommon
   
+  #
+  # Returns the config level depths:
+  #
+  #  Example:
+  #
+  #    iox(config-ospf-ar)#
+  #
+  #    irb> iox.config_lvl?
+  #    => 3
+  # 
   def config_lvl?
     return -1 unless config?
     @lp =~ /\(config(|.+)\)/

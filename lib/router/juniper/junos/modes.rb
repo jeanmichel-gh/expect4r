@@ -3,6 +3,18 @@ require 'router/modes'
 module Expect4r::Router::Junos
 module Modes
 
+# Adds a Junos <tt>config</tt> mixin.
+#
+# Example:
+#
+#  j.config %{
+#    edit logical-router Orleans protocols bgp
+#      edit group session-to-200
+#        set type external
+#        set peer-as 200
+#        set neighbor 40.0.2.1 peer-as 200
+#  }
+#
 def config(stmts=nil, arg={})
   login unless connected?
   if stmts
@@ -17,6 +29,12 @@ def config(stmts=nil, arg={})
   end
 end
 
+# Adds a Junos <tt>exec</tt> mixin.
+#
+# Example:
+#
+#   j.exec 'set cli screen-length 0'
+#
 def exec(cmd=nil, *args)
   login unless connected?
   if cmd.nil?
@@ -50,14 +68,23 @@ def shell(cmd=nil, *args)
   end
 end
 
+#
+# returns <tt>true</tt> if router is in <tt>:exec</tt> mode,  <tt>false</tt> otherwise.
+#
 def exec?
   @lp =~ /> $/ ? true : false
 end
 
+#
+# returns <tt>true</tt> if router is in <tt>:config</tt> mode, <tt>false</tt> otherwise.
+#
 def config?
   @lp =~ /^.+# $/ ? true : false
 end
 
+#
+# returns <tt>true</tt> if router is in <tt>:shell</tt> mode, <tt>false</tt> otherwise.
+#
 def shell?
   @lp == '% ' ? true : false
 end

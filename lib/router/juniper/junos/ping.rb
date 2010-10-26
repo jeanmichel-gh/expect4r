@@ -3,6 +3,24 @@ require 'router/error'
 module Expect4r::Router::Junos
 module Ping
 
+  # Adds a ping method to J class:
+  #
+  # Options are:
+  # * <tt>:count</tt> or <tt>:repeat_count</tt>
+  # * <tt>:size</tt> or <tt>:datagram_size</tt>
+  # * <tt>:datagram_size</tt> or <tt>:size</tt>
+  # * <tt>:timeout</tt>
+  # * <tt>:tos</tt>
+  # * <tt>:ttl</tt>
+  # * <tt>:pattern</tt>
+  # * <tt>:pct_success</tt> - default is 99.
+  #
+  # Option examples:
+  #   :count => 10
+  #   :timeout => 1
+  #   :size=> 512
+  #   :protocol=> 'ipv4', :count=> 20, :size=> 1500, :timeout=>5, :ttl=>16
+  #
   def ping(host, arg={})
 
     pct_success = arg.delete(:pct_success) || 99

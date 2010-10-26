@@ -3,6 +3,19 @@ require 'router/modes'
 module Expect4r::Router::Iox
 module Modes
 
+  # Adds an Iox <tt>config>/tt> mixin.
+  #
+  # Options are:
+  #
+  # Option examples:
+  #
+  #   iox.config %{
+  #      interface GigabitEthernet0/2/0/0
+  #      desc to switch port 13'
+  #      ipv4 address 190.0.0.9 255.255.255.252'
+  #      no shut'
+  #   }
+  #
   def config(config=nil, arg={})
     login unless connected?
     if config

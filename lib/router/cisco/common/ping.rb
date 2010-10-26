@@ -4,6 +4,29 @@ module Expect4r::Router::CiscoCommon
 module Ping
   include ::Expect4r::Router::Error
  
+  # Adds a <tt>ping</tt> method to <tt>CiscoCommon::Ping mixin</tt>:
+  #
+  # Options are:
+  # * <tt>:protocol</tt>
+  # * <tt>:repeat_count</tt> or <tt>:count</tt>
+  # * <tt>:datagram_size</tt> or <tt>:size</tt>
+  # * <tt>:timeout</tt>
+  # * <tt>:source_address</tt> 
+  # * <tt>:tos</tt>
+  # * <tt>:df</tt>
+  # * <tt>:pattern</tt>
+  # * <tt>:sweep_min_size</tt>
+  # * <tt>:sweep_max_size</tt>
+  # * <tt>:sweep_interval</tt>
+  # * <tt>:pct_success</tt> - default is 99.
+  #
+  # Option examples:
+  #   :protocol => 'ipv4'
+  #   :count => 10
+  #   :timeout => 1
+  #   :size=> 512
+  #   :protocol=> 'ipv4', :count=> 20, :size=> 1500, :timeout=>5
+  #
   def ping(target_ip_address, arg={})
 
     pct_success = arg.delete(:pct_success) || 99
