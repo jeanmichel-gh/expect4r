@@ -5,7 +5,7 @@ module Ping
 
   def ping(host, arg={})
 
-    pct_success = arg.delete(:pct_success) || 100
+    pct_success = arg.delete(:pct_success) || 99
 
     output = exec(ping_cmd(host, arg), arg)
 
@@ -37,11 +37,11 @@ private
   def ping_cmd(host, arg={})
     cmd = "ping #{host}"
     cmd += " rapid"
-    cmd += " count #{arg[:count] || arg[:repeat_count]}" if arg[:count] || arg[:repeat_count]
-    cmd += " size #{arg[:size] || arg[:datagram_size]}"  if arg[:size]  || arg[:datagram_size] 
-    cmd += " pattern #{arg[:pattern]}"                   if arg[:pattern]
-    cmd += " tos #{arg[:tos]}"                           if arg[:tos]
-    cmd += " ttl #{arg[:ttl]}"                           if arg[:ttl]
+    cmd += " count #{arg[:count] || arg[:repeat_count]}"  if arg[:count] || arg[:repeat_count]
+    cmd += " size #{arg[:size]   || arg[:datagram_size]}" if arg[:size]  || arg[:datagram_size] 
+    cmd += " pattern #{arg[:pattern]}"                    if arg[:pattern]
+    cmd += " tos #{arg[:tos]}"                            if arg[:tos]
+    cmd += " ttl #{arg[:ttl]}"                            if arg[:ttl]
     cmd
   end
 

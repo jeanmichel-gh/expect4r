@@ -1,29 +1,27 @@
 require 'router/error'
 
-module Expect4r::Router::Iox
+module Expect4r::Router::CiscoCommon
 module Ping
+  include ::Expect4r::Router::Error
+ 
+  def ping(target_ip_address, arg={})
 
-  def ping(arg={})
+    pct_success = arg.delete(:pct_success) || 99
 
-    raise ArgumentError, "You must specify a target_ip_address" unless arg[:target_ip_address]
+    if arg.empty?
 
-    pct_success = arg.delete(:pct_success) || 100
-    target_ip_address = [:target_ip_address]
-
-    if (arg.keys - [:target_ip_address]).empty?
-
-      output = exec "ping #{arg[:target_ip_address]}", arg
+      output = exec "ping #{target_ip_address}", arg
 
     else
 
       @matches = Set.new
 
-      set_ping_base_matches arg
+      set_ping_base_matches target_ip_address, arg
       set_ping_extended_matches arg
       set_ping_sweep_matches arg
 
       output = exec "ping", arg
-      
+
     end
 
     r = output[0].find { |x| x =~/Success.*[^\d](\d+) percent \((\d+)\/(\d+)\)/}
@@ -32,28 +30,30 @@ module Ping
       Regexp.last_match(1) && 
       Regexp.last_match(2) && 
       Regexp.last_match(3)
+      
+      pct = $1.to_i
+      tx  = $3.to_i
+      rx  = $2.to_i
 
-      # TODO: use getter host instead of @host.
       if $1.to_i < pct_success
-        raise ::Expect4r::Router::Error::PingError.new(@host, target_ip_address, pct_success, $1.to_i, $2.to_i,$3.to_i, output)
+        raise ::Expect4r::Router::Error::PingError.new(@host, target_ip_address, pct_success, pct, tx, rx, output)
       else
         [$1.to_i,[$2.to_i,$3.to_i],output]
       end
 
     else
-      raise ::Expect4r::Router::Error::PingError.new(@host, target_ip_adress, pct_success, $1.to_i, $2.to_i,$3.to_i, output)
+      raise ::Expect4r::Router::Error::PingError.new(@host, target_ip_adress, pct_success, pct, tx, rx, output)
     end
 
   end
 
 private
 
-  def set_ping_base_matches(arg={})
-    target_ip_address = arg[:target_ip_address]
-    protocol          = arg[:protocol]          || ''
-    repeat_count      = arg[:repeat_count]      || ''
-    datagram_size     = arg[:datagram_size]     || ''
-    timeout           = arg[:timeout]           || ''
+  def set_ping_base_matches(target_ip_address, arg={})
+    protocol          = arg[:protocol]      || ''
+    repeat_count      = arg[:repeat_count]  || arg[:count] || ''
+    datagram_size     = arg[:datagram_size] || arg[:size]  || ''
+    timeout           = arg[:timeout]       || ''
     @matches << [/Protocol.+\: $/, protocol]
     @matches << [/Target IP address\: $/, target_ip_address]
     @matches << [/Repeat count.+\: $/, repeat_count]
@@ -63,7 +63,7 @@ private
 
   def set_ping_extended_matches(arg={})
     extended_keys = [:source_address, :tos, :df, :pattern]
-    if (extended_keys & arg.keys).empty? and arg[:source_address]
+    if (extended_keys & arg.keys).empty? and ! arg[:source_address]
       @matches << [/Extended.+\: $/, '']
     else
       src_adr =  arg[:source_address]
@@ -83,12 +83,12 @@ private
   def set_ping_sweep_matches(arg={})
     sweep_keys = [:sweep_min_size, :sweep_max_size, :sweep_interval]
     if (sweep_keys & arg.keys).empty?
-      @matches << [/Sweep range of sizes\? \[no\]\: $/, 'no']
+      @matches << [/Sweep range of sizes.+: $/, 'no']
     else
       min_size = arg[:sweep_min_size] || ''
       max_size = arg[:sweep_max_size] || ''
       interval = arg[:sweep_interval] || ''
-      @matches << [/Sweep range of sizes\? \[no\]\: $/, 'yes']
+      @matches << [/Sweep range of sizes.+: $/, 'yes']
       @matches << [/Sweep min size.+\: $/, min_size]
       @matches << [/Sweep max size.+\: $/, max_size]
       @matches << [/Sweep interval.+\: $/, interval]
@@ -96,12 +96,13 @@ private
   end
 
 end
-
 end
 
 __END__
 
-p.ping :target_ip_address => '171.70.245.44'
-p.ping :target_ip_address => '171.70.245.44', :sweep_max_size=> 1512
-p.ping :target_ip_address => '171.70.245.44', :source_address => ' 172.20.186.101'
+p.ping '192.168.1.23'
+p.ping '192.168.1.23', :sweep_max_size=> 1512, :pct_success => 95
+p.ping '192.168.1.23', :source_address => '192.168.1.199', :count=> 100, :pct_success=> 90
+
+puts output[2][0].join("\n").split(": \n").join(": ")
 
