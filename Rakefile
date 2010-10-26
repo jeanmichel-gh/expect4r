@@ -14,7 +14,7 @@ begin
     s.authors = ['Jean-Michel Esnault']
     s.email = "jesnault@gmail.com"
     s.summary = "Expect4r"
-    s.description = "A Ruby Library for interacting with Ios, Ios-XR, and Junos CLI."
+    s.description = "A Ruby Library for interacting with IOS, IOS-XR, and JUNOS  CLI."
     s.platform = Gem::Platform::RUBY
     s.executables = []
     s.files = %w( LICENSE COPYING README.rdoc ) + Dir["lib/**/*"] + ["examples/**/*"]
@@ -24,8 +24,8 @@ begin
     s.require_path = 'lib'
     s.required_ruby_version = ">= 1.8.7"
     s.add_dependency('highline', '>= 1.5.0')
-    # s.homepage = "http://github.com/jesnault"
-    # s.rubyforge_project = 'expect4'
+    s.homepage = "http://github.com/jesnault/expect4r"
+    # s.rubyforge_project = 'expect4r'
   end
 rescue LoadError
   puts "Jeweler not available. Install it with: sudo gem install jeweler"

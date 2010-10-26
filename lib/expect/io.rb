@@ -150,6 +150,7 @@ module Expect4r
   end
 
   def interact(k=?\C-z)
+    login unless connected?
     STDOUT.puts "\n\#\n\# #{ctrl_key k} to terminate.\n\#\n"
     reader :start
     writer k
