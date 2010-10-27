@@ -121,11 +121,3 @@ private
 end
 end
 
-__END__
-
-p.ping '192.168.1.23'
-p.ping '192.168.1.23', :sweep_max_size=> 1512, :pct_success => 95
-p.ping '192.168.1.23', :source_address => '192.168.1.199', :count=> 100, :pct_success=> 90
-
-puts output[2][0].join("\n").split(": \n").join(": ")
-

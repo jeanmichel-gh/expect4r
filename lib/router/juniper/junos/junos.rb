@@ -13,9 +13,8 @@ class Expect4r::J < ::Expect4r::BaseObject
     @more =  /---\(more(| \d+\%)\)---/
   end
   
-  def login
-    ENV['TERM']='dumb'
-    super(spawnee)
+  def login(arg={})
+    super(spawnee, arg)
     exec 'set cli screen-length 0'
     self
   end

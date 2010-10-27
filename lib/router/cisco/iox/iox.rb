@@ -18,8 +18,8 @@ class Expect4r::Iox < ::Expect4r::BaseObject
     @more = / --More-- /
   end
   
-  def login
-    super(spawnee)
+  def login(arg={})
+    super(spawnee, arg)
     config 'no logging console' if port>0
     exec "terminal len 0\nterminal width 0"
     self

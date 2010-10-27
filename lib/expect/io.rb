@@ -81,10 +81,11 @@ module Expect4r
   end
 
   def child_exit
-    if @pid
-      Process.kill(:KILL, @pid)
-      @thread.kill
-      @lp, @r, @w, @pid = [nil]*4
+    if @proxy
+      @proxy.logout
+    else
+      Process.kill(:KILL, @pid) if @pid
+      @thread.kill if @thread
     end
   rescue Errno::ESRCH, Errno::ECHILD => e
   ensure
@@ -203,14 +204,19 @@ module Expect4r
     @r && (not child_exited?)
   end
 
-  def login(c, o={})
+  def login(cmd, arg={})
+    
     return if connected?
 
-    spawn c
+    if arg[:by_proxy]
+      login_proxy cmd, arg
+    else
+      spawn cmd
+    end
 
-    o={:timeout=>13, :no_echo=>false}.merge(o)
-    timeout =   o[:timeout]
-    no_echo = o[:no_echo]
+    arg={:timeout=>13, :no_echo=>false}.merge(arg)
+    timeout = arg[:timeout]
+    no_echo = arg[:no_echo]
 
     output=[]
     t0 = Time.now
@@ -244,9 +250,9 @@ module Expect4r
       elapsed = Time.now - t0
       if elapsed < timeout
         child_exit
-        raise ConnectionError.new(c)
+        raise ConnectionError.new(cmd)
       else
-        raise ExpTimeoutError.new(c, timeout)
+        raise ExpTimeoutError.new(cmd, timeout)
       end
     else
       @lp = buf.last
@@ -256,6 +262,13 @@ module Expect4r
   end
   
   private
+  
+  def login_proxy(cmd, arg)
+    @proxy = arg[:by_proxy]
+    @proxy.login
+    @proxy.exp_puts cmd
+    @r, @w, @pid = @proxy.instance_eval { [@r, @w, @pid] }
+  end
  
   #FIXME ? putline to send_cmd ? 
   # hide putline and expose cmd

@@ -33,8 +33,8 @@ class Expect4r::Ios < ::Expect4r::BaseObject
     Expect4r.decipher(@pwd)    # password is ciphered ...
   end
   
-  def login
-    super(spawnee)
+  def login(arg={})
+    super(spawnee,arg)
     enable
     exec "term len 0\nterm width 0"
     self
