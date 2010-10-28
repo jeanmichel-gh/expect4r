@@ -25,7 +25,7 @@ def config(stmts=nil, arg={})
     change_mode_to(mode)
     output
   else
-    mode
+    to_config
   end
 end
 

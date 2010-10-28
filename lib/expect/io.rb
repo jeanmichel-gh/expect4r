@@ -250,6 +250,9 @@ module Expect4r
         when /.*\r\n/
           exp_internal "match EOL"
           read_pipe._io_save no_echo, "match EOL", "\r\n"
+        when /Are you sure you want to continue connecting \(yes\/no\)\?/
+          read_pipe._io_save no_echo, "match continue connecting"
+          exp_puts 'yes'
         end
       end
     end
