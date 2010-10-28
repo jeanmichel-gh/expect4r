@@ -34,7 +34,7 @@ module Expect4r
     module Junos
       autoload :Modes, 'router/juniper/junos/modes'
       autoload :Show,  'router/juniper/junos/show'
-      autoload :Ping, 'router/juniper/junos/Ping'
+      autoload :Ping, 'router/juniper/junos/ping'
     end
   end
 

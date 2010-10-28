@@ -205,8 +205,8 @@ module Expect4r
   end
 
   def login_by_proxy(proxy)
-    raise ArgumentError, "Don't know how to login to #{proxy}" unless proxy.respond_to? :login
-    login :proxy=> proxy
+    raise ArgumentError, "Don't know how to login to #{proxy}" unless proxy.respond_to? :_login_
+    _login_ :proxy=> proxy
   end
   alias :login_via :login_by_proxy
 

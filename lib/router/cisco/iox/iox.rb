@@ -24,6 +24,10 @@ class Expect4r::Iox < ::Expect4r::BaseLoginObject
     exec "terminal len 0\nterminal width 0"
     self
   end
+  # FIXME: 1.9.2 bug: 
+  # It calls LoginBaseOject#login() instead of calling J#login()
+  # modified login_by_proxy to call _login_ seems to work.
+  alias :_login_ :login
   
   def commit(arg={})
     return unless config?

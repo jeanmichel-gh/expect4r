@@ -18,6 +18,10 @@ class Expect4r::J < ::Expect4r::BaseLoginObject
     exec 'set cli screen-length 0'
     self
   end
+  # FIXME: 1.9.2 bug: 
+  # It calls LoginBaseOject#login() instead of calling J#login()
+  # modified login_by_proxy to call _login_ seems to work.
+  alias :_login_ :login
   
   def console?
     @port>0

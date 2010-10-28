@@ -26,6 +26,11 @@ module Expect4r
       super(spawnee, arg)
       cmd %{export COLUMNS=1024}
     end
+    # FIXME: 1.9.2 bug: 
+    # It calls LoginBaseOject#login() instead of calling J#login()
+    # modified login_by_proxy to call _login_ seems to work.
+    alias :_login_ :login
+    
     def ps1=(val)
       # Assumes bash
       @ps1_bis = /#{val}$/
