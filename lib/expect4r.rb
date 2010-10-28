@@ -7,6 +7,7 @@ module Expect4r
   autoload :Ios,    'router/cisco/ios/ios'
   autoload :J,      'router/juniper/junos/junos'
   autoload :Shell,  'misc/shell'
+  autoload :RShell, 'misc/shell'
 
   module Router
     autoload :Common, 'router/common'

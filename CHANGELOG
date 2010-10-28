@@ -1,13 +1,16 @@
-=== 0.0.3
+=== 0.0.3 dev Wed Oct 27
 
- * Added rdoc documentations.
- * login by proxy, i.e. 
-    j.login :by_proxy => (Ios.new_telnet 'commserver', 'lab', 'lab')
+ * Added a RShell class
+
+ * Added login_via method so as to login to a box from another.
+
+    iox = Iox.new_telnet 'router', 'user'
+    iox.login_via RShell.new_ssh('hostname', 'user')
 
 === 0.0.2.dev Tue Oct 26
 
- * Numerous fixes and improvements to the CisoCommon#ping() method
- * Added Junos#ping() method
+ * Added Junos#ping
+ * Numerous fixes and improvements to CisoCommon#ping
 
 === 0.0.1.dev  Mon Oct 25
 

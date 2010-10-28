@@ -89,7 +89,7 @@ module Expect4r
     end
   rescue Errno::ESRCH, Errno::ECHILD => e
   ensure
-    @lp, @r, @w, @pid = [nil]*4
+    @lp, @r, @w, @pid, @proxy = [nil]*5
   end
   
   def spawn(cmd)
@@ -204,11 +204,17 @@ module Expect4r
     @r && (not child_exited?)
   end
 
+  def login_by_proxy(proxy)
+    raise ArgumentError, "Don't know how to login to #{proxy}" unless proxy.respond_to? :login
+    login :proxy=> proxy
+  end
+  alias :login_via :login_by_proxy
+
   def login(cmd, arg={})
     
     return if connected?
 
-    if arg[:by_proxy]
+    if arg[:proxy]
       login_proxy cmd, arg
     else
       spawn cmd
@@ -230,7 +236,9 @@ module Expect4r
         when spawnee_prompt
           read_pipe._io_save false, "match PROMPT"
           throw(:done, [:ok, output])
-        when /(user\s*name\s*|login):\r*$/i
+        when /Last (L|l)ogin:/
+          read_pipe._io_save no_echo   # consumes 
+        when /(user\s*name\s*|login):\s*$/i
           read_pipe._io_save no_echo, "match USERNAME"
           exp_puts spawnee_username
         when /password:\s*$/i
@@ -258,13 +266,12 @@ module Expect4r
       @lp = buf.last
     end
     [buf, ev]
-    
   end
   
   private
   
   def login_proxy(cmd, arg)
-    @proxy = arg[:by_proxy]
+    @proxy = arg[:proxy].dup
     @proxy.login
     @proxy.exp_puts cmd
     @r, @w, @pid = @proxy.instance_eval { [@r, @w, @pid] }
@@ -421,7 +428,7 @@ module Kernel
 end
 
 module Expect4r
-  class BaseObject
+  class BaseLoginObject
     class << self
       def new_telnet(*args)
         new :telnet, *args
@@ -435,10 +442,10 @@ module Expect4r
         @routers << r
       end
     end
-    attr_reader :host, :user, :method, :port
+    attr_reader :host, :user, :method, :port, :proxy
     alias :username :user
     alias :hostname :host
-    # Adds a login to a Expect4r::BaseObject"
+    # Adds a login to a Expect4r::BaseLoginObject"
     #
     # Constructor: 
     # * <tt>new</tt>  <method>, <username>, <password>, [port_number]
@@ -454,7 +461,7 @@ module Expect4r
     #   new :ssh, :user=> 'jme'
     #
     def initialize(*args)
-      ciphered_pwd=nil
+      ciphered_password=nil
       if args.size>2 and args[1].is_a?(String)
         @method, host, @user, pwd = args
       elsif args.size == 2 and args[1].is_a?(Hash) and args[0].is_a?(Symbol)
@@ -462,29 +469,62 @@ module Expect4r
         host = args[1][:host] || args[1][:hostname]
         @user = args[1][:user]|| args[1][:username]
         pwd  = args[1][:pwd]  || args[1][:password]
-        ciphered_pwd  = args[1][:ciphered_pwd]
+        ciphered_password  = args[1][:ciphered_password]
       end
       @host, port = host.split
       @port = port.to_i
-      @pwd = if ciphered_pwd
-        ciphered_pwd
+      @pwd = if ciphered_password
+        ciphered_password
       else
         Expect4r.cipher(pwd) if pwd
       end
       @ps1 = /(.*)(>|#|\$)\s*$/
       @more = / --More-- /
       @matches=Set.new
-      BaseObject.add(self)
+      BaseLoginObject.add(self)
       self
     end
+
+    def spawnee
+      case method
+      when :telnet  ; "telnet #{host} #{port if port>0}"
+      when :ssh     ; "ssh #{spawnee_username}@#{host}"
+      else
+        raise RuntimeError
+      end
+    end
+
+    def spawnee_username
+      @user
+    end
+
+    def spawnee_prompt
+      @ps1
+    end
+    
+    def dup
+      if @pwd
+        self.class.new @method, @host, @user, Expect4r.decipher(@pwd)
+      else
+        self.class.new @method, @host, @user
+      end
+    end
+
+    private
+
+    def spawnee_password
+      @pwd = Expect4r.cipher( ask("(#{self}) Enter your password:  ") { |q| q.echo = "X" } ) unless @pwd
+      Expect4r.decipher(@pwd)
+    end
+
   end
 end
 
 if __FILE__ != $0
 
   at_exit { 
-    if Expect4r::BaseObject.routers
-      Expect4r::BaseObject.routers.each { |r| r.logout if r.respond_to? :logout }
+    if Expect4r::BaseLoginObject.routers
+      Expect4r::BaseLoginObject.routers.each { |r| r.logout if r.respond_to? :logout }
     end
   }
   
@@ -492,21 +532,21 @@ else
 
   require "test/unit"
 
-  class Expect4r::BaseObject
+  class Expect4r::BaseLoginObject
     def initialize
-      Expect4r::BaseObject.add(self)
+      Expect4r::BaseLoginObject.add(self)
     end
   end
 
-  class TestRouterBaseObject < Test::Unit::TestCase
+  class TestRouterBaseLoginObject < Test::Unit::TestCase
     include Expect4r
 
     def test_add
-      assert [], BaseObject.routers
-      BaseObject.new
-      assert 1, BaseObject.routers.size
-      BaseObject.new 
-      assert_equal 2, BaseObject.routers.size
+      assert [], BaseLoginObject.routers
+      BaseLoginObject.new
+      assert 1, BaseLoginObject.routers.size
+      BaseLoginObject.new 
+      assert_equal 2, BaseLoginObject.routers.size
     end
   end
 

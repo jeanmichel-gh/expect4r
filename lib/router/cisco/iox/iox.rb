@@ -1,7 +1,7 @@
 
 require 'router/cisco/common/common'
 
-class Expect4r::Iox < ::Expect4r::BaseObject
+class Expect4r::Iox < ::Expect4r::BaseLoginObject
   
   include Expect4r
   include Expect4r::Router

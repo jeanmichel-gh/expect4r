@@ -1,4 +1,4 @@
-class Expect4r::J < ::Expect4r::BaseObject
+class Expect4r::J < ::Expect4r::BaseLoginObject
   include Expect4r
   include Expect4r::Router::Error
   include Expect4r::Router::Common

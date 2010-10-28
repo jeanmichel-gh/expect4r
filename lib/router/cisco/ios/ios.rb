@@ -1,6 +1,6 @@
 require 'router/cisco/common/common'
 
-class Expect4r::Ios < ::Expect4r::BaseObject
+class Expect4r::Ios < ::Expect4r::BaseLoginObject
   
   include Expect4r
   include Expect4r::Router::Common

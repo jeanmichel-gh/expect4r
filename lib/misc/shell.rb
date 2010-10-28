@@ -1,7 +1,4 @@
-require 'expect/io'
-
 module Expect4r
-
   class Shell
     include Expect4r
     def initialize()
@@ -15,5 +12,39 @@ module Expect4r
       spawn @shell
     end
   end
+  class RShell < ::Expect4r::BaseLoginObject
+    include Expect4r
+    def initialize(*args)
+      super
+      default_ps1
+    end
+    def logout
+      default_ps1
+      super
+    end
+    def login(arg={}) 
+      super(spawnee, arg)
+      cmd %{export COLUMNS=1024}
+    end
+    def ps1=(val)
+      # Assumes bash
+      @ps1_bis = /#{val}$/
+      cmd %? export PS1='#{val}' ?
+      @ps1 = @ps1_bi
+    end
+    def cmd(*args)
+      exp_send *args
+    end
 
+    private
+    
+    def default_ps1
+      @ps1 = /.+[^\#](\#|\$)\s+$/
+    end
+  end
 end
+
+__END__
+
+
+cmd %? PROMPT_COMMAND="echo -n [$(date +%k:%m:%S)]: && pwd" && export PS1='#{val}' ?
