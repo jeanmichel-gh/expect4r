@@ -29,7 +29,7 @@ class Expect4r::J < ::Expect4r::BaseLoginObject
   
   def putline(line,arg={})
     o, rc = super
-    raise SyntaxError.new(self.class.to_s, line) if o.join =~ /(unknown command|syntax error)\./
+    raise SyntaxError.new(self.class.to_s, line) if o.join =~ /(unknown command|syntax error)/
     o
   end
   

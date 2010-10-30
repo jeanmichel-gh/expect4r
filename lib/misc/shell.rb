@@ -35,7 +35,7 @@ module Expect4r
       # Assumes bash
       @ps1_bis = /#{val}$/
       cmd %? export PS1='#{val}' ?
-      @ps1 = @ps1_bi
+      @ps1 = @ps1_bis
     end
     def cmd(*args)
       exp_send *args

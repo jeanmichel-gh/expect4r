@@ -21,7 +21,6 @@ You talk to routers by connecting to them using ssh or telnet and send exec or c
    router = Iox.new_telnet 'hostname', 'username'
    router.login_via my_mac
 
-   
 * Push configurations to routers
 
    ios.config 'no logging console'

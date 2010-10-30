@@ -253,6 +253,8 @@ module Expect4r
         when /Are you sure you want to continue connecting \(yes\/no\)\?/
           read_pipe._io_save no_echo, "match continue connecting"
           exp_puts 'yes'
+        when /(Login incorrect|denied, please try again)/
+          spawnee_reset
         end
       end
     end
@@ -516,8 +518,15 @@ module Expect4r
     private
 
     def spawnee_password
-      @pwd = Expect4r.cipher( ask("(#{self}) Enter your password:  ") { |q| q.echo = "X" } ) unless @pwd
+      if @pwd.nil?
+        @pwd = Expect4r.cipher( ask("(#{self}) Enter your password:  ") { |q| q.echo = "X" } )
+        @asked4pwd=true
+      end
       Expect4r.decipher(@pwd)
+    end
+    
+    def spawnee_reset
+      @pwd=nil if @asked4pwd
     end
 
   end
