@@ -27,7 +27,7 @@ module Ping
 
     output = exec(ping_cmd(host, arg), arg)
 
-    r = output[0].find { |x| p x ; x =~/(\d+) packets transmitted, (\d+) packets received, (\d+)\% packet loss/}
+    r = output[0].find { |x| x =~/(\d+) packets transmitted, (\d+) packets received, (\d+)\% packet loss/}
 
     if r && 
       Regexp.last_match(1) && 
@@ -55,6 +55,7 @@ private
   def ping_cmd(host, arg={})
     cmd = "ping #{host}"
     cmd += " rapid"
+    cmd += " logical-router #{arg[:logical_router]}" if arg[:logical_router]
     cmd += " count #{arg[:count] || arg[:repeat_count]}"  if arg[:count] || arg[:repeat_count]
     cmd += " size #{arg[:size]   || arg[:datagram_size]}" if arg[:size]  || arg[:datagram_size] 
     cmd += " pattern #{arg[:pattern]}"                    if arg[:pattern]

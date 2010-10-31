@@ -66,14 +66,14 @@ module Modes
   end
   
   #
-  # returns <tt>true</tt> if router is in <tt>:exec</tt> (enabled) mode,  <tt>false</tt> otherwise.
+  # returns *true* if router is in <tt>:exec</tt> (enabled) mode,  *false* otherwise.
   #
   def exec?
     ! user? and ! config?
   end
   
   #
-  # returns <tt>true</tt> if router is in <tt>:user</tt> mode,  <tt>false</tt> otherwise.
+  # returns *true* if router is in <tt>:user</tt> mode,  *false* otherwise.
   #
   def user?
     @lp =~ /.+>\s*$/

@@ -22,7 +22,7 @@ begin
     s.has_rdoc = false
     s.rdoc_options = ["--quiet", "--title", "Expect4r", "--line-numbers"]
     s.require_path = 'lib'
-    s.required_ruby_version = ">= 1.8.7"
+    s.required_ruby_version = ">= 1.8.6"
     s.add_dependency('highline', '>= 1.5.0')
     s.homepage = "http://github.com/jesnault/expect4r"
     # s.rubyforge_project = 'expect4r'

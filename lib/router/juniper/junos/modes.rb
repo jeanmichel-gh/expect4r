@@ -23,7 +23,7 @@ def config(stmts=nil, arg={})
     output = exp_send(stmts, arg)
     output << commit
     change_mode_to(mode)
-    output
+    output.flatten
   else
     to_config
   end
@@ -69,21 +69,21 @@ def shell(cmd=nil, *args)
 end
 
 #
-# returns <tt>true</tt> if router is in <tt>:exec</tt> mode,  <tt>false</tt> otherwise.
+# returns *true* if router is in <tt>:exec</tt> mode,  *false* otherwise.
 #
 def exec?
   @lp =~ /> $/ ? true : false
 end
 
 #
-# returns <tt>true</tt> if router is in <tt>:config</tt> mode, <tt>false</tt> otherwise.
+# returns *true* if router is in <tt>:config</tt> mode, *false* otherwise.
 #
 def config?
   @lp =~ /^.+# $/ ? true : false
 end
 
 #
-# returns <tt>true</tt> if router is in <tt>:shell</tt> mode, <tt>false</tt> otherwise.
+# returns *true* if router is in <tt>:shell</tt> mode, *false* otherwise.
 #
 def shell?
   @lp == '% ' ? true : false

@@ -14,6 +14,7 @@ module Expect4r
   end
   class RShell < ::Expect4r::BaseLoginObject
     include Expect4r
+    
     def initialize(*args)
       super
       default_ps1

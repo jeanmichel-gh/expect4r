@@ -230,12 +230,12 @@ module Expect4r
       @r.readbuf(timeout) do |read_pipe|
         if read_pipe._io_exit?
           exp_internal "readbuf: _io_exit?"
-          throw :done, [ :abort,  output]
+          throw :done, [ :cnx_error,  read_pipe._io_buf1]
         end
         case read_pipe._io_string
         when spawnee_prompt
-          read_pipe._io_save false, "match PROMPT"
-          throw(:done, [:ok, output])
+          read_pipe._io_save no_echo, "match PROMPT"
+          throw(:done, [:ok, read_pipe._io_buf1])
         when /Last (L|l)ogin:/
           read_pipe._io_save no_echo   # consumes 
         when /(user\s*name\s*|login):\s*$/i
@@ -249,7 +249,7 @@ module Expect4r
           io_escape_char_cb
         when /.*\r\n/
           exp_internal "match EOL"
-          read_pipe._io_save no_echo, "match EOL", "\r\n"
+          read_pipe._io_save no_echo, "match EOL"
         when /Are you sure you want to continue connecting \(yes\/no\)\?/
           read_pipe._io_save no_echo, "match continue connecting"
           exp_puts 'yes'
@@ -259,14 +259,12 @@ module Expect4r
       end
     end
     case ev
-    when :abort
-      elapsed = Time.now - t0
-      if elapsed < timeout
-        child_exit
-        raise ConnectionError.new(cmd)
-      else
-        raise ExpTimeoutError.new(cmd, timeout)
-      end
+    when :cnx_error
+      child_exit
+      err_msg = "Could not connect to #{@host}:\n"
+      err_msg += " >> #{cmd}\n    "
+      err_msg += buf.join("\n    ")
+      raise ConnectionError.new(err_msg)
     else
       @lp = buf.last
     end
@@ -307,12 +305,12 @@ module Expect4r
         case r._io_string
         when @ps1, @ps1_bis
           unless r._io_more?
-            r._io_save false, "matching PROMPT"
+            r._io_save no_echo, "matching PROMPT"
             throw(:done, [:ok, r._io_buf1])
           end
           exp_internal "more..."
         when /(.+)\r\n/, "\r\n"
-          r._io_save no_echo, "matching EOL", "\r\n"
+          r._io_save no_echo, "matching EOL"
         when @more
           r._io_save no_echo, "matching MORE"
           putc ' '
@@ -435,9 +433,19 @@ end
 module Expect4r
   class BaseLoginObject
     class << self
+      # Examples:
+      #   my_mac = RShell.new_telnet '1.1.1.1', 'me', 'secret'
+      #   ios = Ios.new_telnet '1.1.1.1', 'lab', 'lab'
+      #   iox = Iox.new_telnet '1.1.1.1', 'username', 'pwd'
+      #
       def new_telnet(*args)
         new :telnet, *args
       end
+      # Examples:
+      #   my_mac = RShell.new_ssh '1.1.1.1', 'me', 'secret'
+      #   iox = Ios.new_ssh '1.1.1.1', 'lab', 'lab'
+      #   ios = Iosx.new_ssh '1.1.1.1', 'username', 'pwd'
+      #
       def new_ssh(*args)
         new :ssh, *args
       end
@@ -462,8 +470,9 @@ module Expect4r
     # * <tt>:pwd</tt> or <tt>:password</tt>
     #
     # Examples:
-    #   new :telnet, :user=> 'lab', :password=>'lab'
-    #   new :ssh, :user=> 'jme'
+    #   new :telnet, :host=> '1.1.1.1', :user=> 'lab', :password=>'lab'
+    #   new :ssh, :host=> '1.1.1.1', :user=> 'jme'
+    #   new :ssh, '1.1.1.1', 'me', 'secret'
     #
     def initialize(*args)
       ciphered_password=nil

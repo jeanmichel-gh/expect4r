@@ -39,13 +39,3 @@ module Expect4r
   end
 
 end
-
-if __FILE__ == $0
-  module Expect4r
-    p Expect4r::Iox.new_ssh 'hostname', 'username'
-    p Expect4r::Iox.new_telnet 'hostname', 'username'
-    p Expect4r::Ios.new_ssh 'hostname', 'username'
-    p Expect4r::J.new_ssh 'hostname', 'username'
-    p Expect4r::Shell.new
-  end
-end

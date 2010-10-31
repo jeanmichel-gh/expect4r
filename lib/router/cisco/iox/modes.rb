@@ -3,7 +3,7 @@ require 'router/modes'
 module Expect4r::Router::Iox
 module Modes
 
-  # Adds an Iox <tt>config>/tt> mixin.
+  # Adds an Iox <tt>config</tt> mixin.
   #
   # Options are:
   #

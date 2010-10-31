@@ -1,8 +1,8 @@
+require 'expect4r'
 require "test/unit"
 
-require "router/cisco/iox/iox"
-
 class TestRouterCiscoIoxIox < Test::Unit::TestCase
+  include Expect4r
   def test_new_hash_terse
     x = Iox.new :ssh, 
                 :host=> '1.1.1.1',
