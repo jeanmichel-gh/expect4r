@@ -314,15 +314,18 @@ module Expect4r
         when @more
           r._io_save no_echo, "matching MORE"
           putc ' '
-        end
-        
-        @matches.each { |match, _send|  
-          if r._io_string =~ match
-             r._io_save no_echo, "match #{match}"
-            exp_puts _send
+        else
+          # For objects that include Expect4r but do not subclass base Login class.
+          @matches ||= []
+          unless @matches.empty?
+            @matches.each { |match, _send|  
+              if r._io_string =~ match
+                r._io_save no_echo, "match #{match}"
+                e xp_puts _send
+              end
+            }
           end
-        }
-        
+        end       
       end
     end
     case rc
@@ -431,7 +434,22 @@ module Kernel
 end
 
 module Expect4r
-  class BaseLoginObject
+  class Base
+    class << self
+      attr_reader :routers
+      def add(r)
+        @routers ||=[]
+        @routers << r
+      end
+    end
+    def initialize(*args)
+      @matches = Set.new
+      Base.add(self)
+      self
+    end
+  end
+  
+  class BaseLoginObject < Base
     class << self
       # Examples:
       #   my_mac = RShell.new_telnet '1.1.1.1', 'me', 'secret'
@@ -475,27 +493,18 @@ module Expect4r
     #   new :ssh, '1.1.1.1', 'me', 'secret'
     #
     def initialize(*args)
-      ciphered_password=nil
       if args.size>2 and args[1].is_a?(String)
-        @method, host, @user, pwd = args
+        @method, host, @user, @pwd = args
       elsif args.size == 2 and args[1].is_a?(Hash) and args[0].is_a?(Symbol)
         @method = args[0]
-        host = args[1][:host] || args[1][:hostname]
-        @user = args[1][:user]|| args[1][:username]
-        pwd  = args[1][:pwd]  || args[1][:password]
-        ciphered_password  = args[1][:ciphered_password]
+        host = args[1][:host]  || args[1][:hostname]
+        @user = args[1][:user] || args[1][:username]
+        @pwd  = args[1][:pwd]  || args[1][:password]
       end
       @host, port = host.split
       @port = port.to_i
-      @pwd = if ciphered_password
-        ciphered_password
-      else
-        Expect4r.cipher(pwd) if pwd
-      end
       @ps1 = /(.*)(>|#|\$)\s*$/
       @more = / --More-- /
-      @matches=Set.new
-      BaseLoginObject.add(self)
       self
     end
 
@@ -528,10 +537,9 @@ module Expect4r
 
     def spawnee_password
       if @pwd.nil?
-        @pwd = Expect4r.cipher( ask("(#{self}) Enter your password:  ") { |q| q.echo = "X" } )
+        @pwd = ask("(#{self}) Enter your password:  ") { |q| q.echo = "X" }
         @asked4pwd=true
       end
-      Expect4r.decipher(@pwd)
     end
     
     def spawnee_reset
@@ -544,8 +552,8 @@ end
 if __FILE__ != $0
 
   at_exit { 
-    if Expect4r::BaseLoginObject.routers
-      Expect4r::BaseLoginObject.routers.each { |r| r.logout if r.respond_to? :logout }
+    if Expect4r::Base.routers
+      Expect4r::Base.routers.each { |r| r.logout if r.respond_to? :logout }
     end
   }
   
@@ -553,21 +561,21 @@ else
 
   require "test/unit"
 
-  class Expect4r::BaseLoginObject
+  class Expect4r::Base
     def initialize
-      Expect4r::BaseLoginObject.add(self)
+      Expect4r::Base.add(self)
     end
   end
 
-  class TestRouterBaseLoginObject < Test::Unit::TestCase
+  class Base < Test::Unit::TestCase
     include Expect4r
 
     def test_add
-      assert [], BaseLoginObject.routers
-      BaseLoginObject.new
-      assert 1, BaseLoginObject.routers.size
-      BaseLoginObject.new 
-      assert_equal 2, BaseLoginObject.routers.size
+      assert [], Base.routers
+      Base.new
+      assert 1, Base.routers.size
+      Base.new 
+      assert_equal 2, Base.routers.size
     end
   end
 

@@ -1,4 +1,12 @@
-=== 0.0.3 dev Wed Oct 27
+=== 0.0.5.dev Sat Nov 5, 2010
+
+ * Created a BaseExpect4r class to track all instances of its kind.
+
+=== 0.0.4.dev Sat Oct 30, 2010
+
+ * Fixes
+
+=== 0.0.3 dev Wed Oct 27, 2010
 
  * Added a RShell class
 
@@ -7,12 +15,12 @@
     iox = Iox.new_telnet 'router', 'user'
     iox.login_via RShell.new_ssh('hostname', 'user')
 
-=== 0.0.2.dev Tue Oct 26
+=== 0.0.2.dev Tue Oct 26, 2010
 
  * Added Junos#ping
  * Numerous fixes and improvements to CisoCommon#ping
 
-=== 0.0.1.dev  Mon Oct 25
+=== 0.0.1.dev  Mon Oct 25, 2010
 
  * Initial release.
 
