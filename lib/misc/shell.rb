@@ -1,7 +1,7 @@
 module Expect4r
-  class Shell
-    include Expect4r
+  class Shell < Expect4r::Base
     def initialize()
+      super
       ENV['PROMPT_COMMAND']="date +%k:%m:%S"
       ENV['PS1']="shell>"
       @ps1 = /shell>$/
@@ -13,8 +13,6 @@ module Expect4r
     end
   end
   class RShell < ::Expect4r::BaseLoginObject
-    include Expect4r
-    
     def initialize(*args)
       super
       default_ps1

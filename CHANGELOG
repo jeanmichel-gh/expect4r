@@ -1,6 +1,7 @@
-=== 0.0.5.dev Sat Nov 5, 2010
+=== 0.0.5.dev Sat Nov 13, 2010
 
- * Created a BaseExpect4r class to track all instances of its kind.
+ * new Expect4r::Base class
+ * Fixes
 
 === 0.0.4.dev Sat Oct 30, 2010
 
