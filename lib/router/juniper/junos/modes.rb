@@ -86,7 +86,13 @@ end
 # returns *true* if router is in <tt>:shell</tt> mode, *false* otherwise.
 #
 def shell?
-  @lp == '% ' ? true : false
+  if @lp == '% '
+    true
+  elsif logged_as_root? and @lp =~ /root@.+% $/
+    true
+  else
+    false
+  end
 end
 
 def set_cli_logical_router(logical_router)
@@ -124,10 +130,14 @@ def to_shell
   :shell
 end
 
+def logged_as_root?
+  @_is_root_ ||=  @lp =~ /root@/
+end
+
 def to_exec
   return :exec if exec?
   top if config?
-  exit
+  logged_as_root? ? cli : exit
   raise RuntimeError, "unable to got to exec mode" unless exec?
   :exec
 end

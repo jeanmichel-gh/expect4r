@@ -47,6 +47,10 @@ class Expect4r::J < ::Expect4r::BaseLoginObject
     putline 'exit'
   end
   
+  def cli
+    putline 'cli'
+  end
+  
   def commit(arg={})
     return unless config?
     @matches << [/Exit with uncommitted changes.+\(yes\)/, 'yes']
