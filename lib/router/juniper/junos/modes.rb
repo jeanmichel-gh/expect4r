@@ -117,7 +117,7 @@ def to_config
   return :config if config?
   to_exec
   putline 'edit', :debug=>1
-  raise RuntimeError, "unable to got to config mode" unless config?
+  raise RuntimeError, "unable to get to config mode" unless config?
   :config
 end
 
@@ -126,7 +126,7 @@ def to_shell
   return :shell if shell? 
   to_exec
   putline 'start shell'
-  raise RuntimeError, "unable to got to shell mode" unless shell?
+  raise RuntimeError, "unable to get to shell mode" unless shell?
   :shell
 end
 
@@ -138,7 +138,7 @@ def to_exec
   return :exec if exec?
   top if config?
   logged_as_root? ? cli : exit
-  raise RuntimeError, "unable to got to exec mode" unless exec?
+  raise RuntimeError, "unable to get to exec mode" unless exec?
   :exec
 end
 

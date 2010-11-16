@@ -90,7 +90,7 @@ module Modes
     return :config if config?
     to_exec
     putline 'configure'
-    raise RuntimeError, "unable to got to config mode" unless config?
+    raise RuntimeError, "unable to get to config mode" unless config?
     :config
   end
 
@@ -98,7 +98,7 @@ module Modes
     return :shell if shell?
     to_exec
     putline 'run'
-    raise RuntimeError, "unable to got to shell mode" unless shell?
+    raise RuntimeError, "unable to get to shell mode" unless shell?
     :shell
   end
 
@@ -106,7 +106,7 @@ module Modes
     return :exec if exec?
     putline "exit"  if shell?
     putline "abort" if config?
-    raise RuntimeError, "unable to got to exec mode" unless exec?
+    raise RuntimeError, "unable to get to exec mode" unless exec?
     :exec
   end
 

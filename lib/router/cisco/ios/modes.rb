@@ -83,7 +83,7 @@ module Modes
     return :config if config?
     to_exec
     putline 'configure terminal' if exec?
-    raise RuntimeError, "unable to got to config mode" unless config?
+    raise RuntimeError, "unable to get to config mode" unless config?
     :config
   end
   
@@ -92,14 +92,14 @@ module Modes
     if config?
       1.upto(config_lvl?) { putline 'exit'}
     end
-    raise RuntimeError, "unable to got to exec mode" unless exec?
+    raise RuntimeError, "unable to get to exec mode" unless exec?
     :exec
   end
 
   def to_user
     return if user?
     putline "exit"
-    raise RuntimeError, "unable to got to user mode" unless exec?
+    raise RuntimeError, "unable to get to user mode" unless exec?
     :user
   end
   
