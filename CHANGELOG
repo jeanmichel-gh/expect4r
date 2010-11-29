@@ -1,3 +1,8 @@
+=== 0.0.6.dev Sun Nov 28, 2010
+
+ * bug fix in Base class
+ * matches to accept String or Proc
+
 === 0.0.5.dev Sat Nov 13, 2010
 
  * new Expect4r::Base class

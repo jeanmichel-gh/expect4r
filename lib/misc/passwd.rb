@@ -24,13 +24,15 @@ begin
   
 rescue LoadError => e
   
-  module Expect4r
-    def self.cipher(arg, pwd='')
-      arg
-    end
-    def self.decipher(arg,pwd='')
-      arg
-    end
-  end
+  # module Expect4r
+  #   def self.cipher(arg, pwd='')
+  #     arg
+  #   end
+  #   def self.decipher(arg,pwd='')
+  #     arg
+  #   end
+  # end
+  
+  raise
 
 end

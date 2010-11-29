@@ -255,7 +255,20 @@ module Expect4r
           exp_puts 'yes'
         when /(Login incorrect|denied, please try again)/
           spawnee_reset
-        end
+        else
+          # For objects that include Expect4r but do not subclass base Login class.
+          @matches ||= []
+          @matches.each { |match, _send|
+            if read_pipe._io_string =~ match
+              read_pipe._io_save no_echo, "match #{match}"
+              if _send.is_a?(Proc)
+                exp_puts _send.call
+              else
+                exp_puts _send
+              end
+            end
+          }
+        end          
       end
     end
     case ev
@@ -320,7 +333,11 @@ module Expect4r
           @matches.each { |match, _send|
             if r._io_string =~ match
               r._io_save no_echo, "match #{match}"
-              exp_puts _send
+              if _send.is_a?(Proc)
+                exp_puts _send.call
+              else
+                exp_puts _send
+              end
             end
           }
         end
@@ -512,7 +529,7 @@ module Expect4r
       @ps1 = /(.*)(>|#|\$)\s*$/
       @more = / --More-- /
       @matches=Set.new
-      BaseLoginObject.add(self)
+      Base.add(self)
       self
     end
 
