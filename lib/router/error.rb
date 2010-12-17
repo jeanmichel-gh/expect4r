@@ -23,9 +23,10 @@ module Error
   end
 
   class PingError < RuntimeError
-    attr_reader :rname, :dest, :exp_pct, :act_pct, :sent, :recv
+    attr_reader :rname, :dest, :exp_pct, :act_pct, :sent, :recv, :ping_output
     def initialize(rname, dest, exp_pct, act_pct, sent, recv, output)
-      @rname, @dest, @exp_pct, @act_pct, @sent, @recv = rname, dest, exp_pct, act_pct, sent, recv
+      @rname, @dest, @exp_pct, @act_pct, @sent, @recv, @ping_output = \
+              rname, dest, exp_pct, act_pct, sent, recv, output
     end
     def err_msg
       "#{@rname} [PingError] : failed to ping #{@dest}, expected/actual pct: #{@exp_pct}/#{@act_pct}"

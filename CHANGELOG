@@ -1,3 +1,9 @@
+=== 0.0.7.dev Thu Dec 16, 2010
+
+ * fix _io_save bug when no_echo
+ * add matches to expect()
+ * readline return empty string when timeout
+
 === 0.0.6.dev Sun Nov 28, 2010
 
  * bug fix in Base class

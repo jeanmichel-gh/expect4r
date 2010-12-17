@@ -9,9 +9,9 @@ class IO
     s = _io_string!
     exp_internal match_string
     exp_internal s
-    return if no_echo
     s = s.chomp(ch) if ch
-    _io_buf1 << s unless no_echo
+    _io_buf1 << s
+    _io_buf1
   end
   def _io_more?   ; ! IO.select([self],nil,nil,0.20).nil? ; end
   def _io_exit?   ; _io_buf0.last.nil?                    ; end
@@ -178,26 +178,130 @@ module Expect4r
     end
     lines.size==1 ? r[0] : r
   end
-  
-  def expect(match, ti=5)
-    ev, buf = catch(:done) do
+
+  def expect(match, ti=5, matches=[])
+    t0 = Time.now
+    rc, buf = catch(:done) do
       @r.readbuf(ti) do |r|
         if r._io_exit?
-          throw :done, [ :timeout, r._io_string!]
+          throw :done, [:abort, r._io_string!]
         end
         case r._io_string
         when match
-          throw :done, [:ok, r._io_string!.chomp("\r\n")]
+          r._io_save false, "matching PROMPT"
+          # puts  "debug IO BUF 1 #{r._io_buf1.inspect}"
+          throw(:done, [:ok, r._io_buf1])
+          # FIXME
+          # Watch out for the ping command !!!!
+          # throw :done, [:ok, r._io_string!.chomp("\r\n")]
+        when /(.+)\r\n/, "\r\n"
+          r._io_save false, "matching EOL"
+        else
+        matches.each do |match, arg|
+          if r._io_string =~ match
+            r._io_save false, "match #{match}"
+            if arg.is_a?(Proc)
+              arg.call(self)
+            else
+              exp_puts arg
+            end
+          end
+        end
         end
       end
     end
-    exp_internal "#{ev.inspect} buf: #{buf.inspect}"
-    raise ExpTimeoutError.new(buf, ti) if ev == :timeout
-    [buf, ev]
+    case rc
+    when :abort
+      elapsed = Time.now - t0
+      if elapsed < ti
+        child_exit
+        raise ConnectionError.new(buf)
+      else
+        raise ExpTimeoutError.new(buf, elapsed)
+      end
+    else
+      @lp = buf.last
+    end
+    [buf, rc]
   end
 
-  def readline(ti=2)
-    expect(/(.+)\r\n/, ti)
+  def get_prompt
+    putline '', :no_trim=>true, :no_echo=>true
+  end
+  
+  def putline(line, arg={})
+    raise ConnectionError.new(line) if child_exited?
+    
+    arg = {:ti=>13, :no_echo=>false, :debug=>0, :sync=> false, :no_trim=>false}.merge(arg)
+    no_echo = arg[:no_echo]
+    ti = arg[:ti]
+    unless arg[:no_trim]==true
+      line = line.gsub(/\s+/,' ').gsub(/^\s+/,'')
+      if line.size==0 
+        log "DEBUG PUTLINE: NOT SENDING **** line = '#{line.inspect}' arg=#{arg.inspect}"
+        return [[], :empty_line]
+      end
+    end
+    sync if arg[:sync]
+    t0 = Time.now
+    exp_puts line
+    output=[]
+    rc, buf = catch(:done) do
+      @r.readbuf(arg[:ti]) do |r|
+        if r._io_exit?
+          r._io_save(no_echo)
+          throw :done, [ :abort,  r._io_buf1]
+        end
+        case r._io_string
+        when @ps1, @ps1_bis
+          unless r._io_more?
+            r._io_save no_echo, "matching PROMPT"
+            # puts  "debug IO BUF 1 #{r._io_buf1.inspect}"
+            throw(:done, [:ok, r._io_buf1])
+          end
+          exp_internal "more..."
+        when /(.+)\r\n/, "\r\n"
+          r._io_save no_echo, "matching EOL"
+        when @more
+          r._io_save no_echo, "matching MORE"
+          putc ' '
+        else
+          # For objects that include Expect4r but do not subclass base Login class.
+          @matches ||= []
+          @matches.each { |match, _send|
+            if r._io_string =~ match
+              r._io_save no_echo, "match #{match}"
+              if _send.is_a?(Proc)
+                _send.call(self)
+              else
+                exp_puts _send
+              end
+            end
+          }
+        end
+      end
+    end
+
+    case rc
+    when :abort
+      elapsed = Time.now - t0
+      if elapsed < ti
+        child_exit
+        raise ConnectionError.new(line)
+      else
+        raise ExpTimeoutError.new(line, elapsed)
+      end
+    else
+      @lp = buf.last
+    end
+    [buf, rc]
+  end
+
+  def readline(ti=0.2, matches=[])
+    ret = expect(/(.+)\r\n/, ti, matches)
+    ret[0][0].chomp
+  rescue ExpTimeoutError => ex
+    ''
   end
 
   def connected?
@@ -453,9 +557,12 @@ module Expect4r
     include Expect4r
     class << self
       attr_reader :routers
+      def all
+        @arr
+      end
       def add(r)
-        @routers ||=[]
-        @routers << r
+        @arr ||=[]
+        @arr << r
       end
     end
     def initialize(*args)
@@ -578,11 +685,11 @@ end
 if __FILE__ != $0
 
   at_exit { 
-    if Expect4r::Base.routers
-      Expect4r::Base.routers.each { |r| r.logout if r.respond_to? :logout }
+    if Expect4r::Base.all
+      Expect4r::Base.all.each { |o| o.logout if o.respond_to? :logout }
     end
   }
-  
+
 else
 
   require "test/unit"
@@ -597,11 +704,11 @@ else
     include Expect4r
 
     def test_add
-      assert [], Base.routers
+      assert [], Base.all
       Base.new
-      assert 1, Base.routers.size
+      assert 1, Base.all.size
       Base.new 
-      assert_equal 2, Base.routers.size
+      assert_equal 2, Base.all.size
     end
   end
 
