@@ -150,11 +150,13 @@ module Expect4r
     raise
   end
 
-  def interact(k=?\C-z)
+  def interact(k="C-z")
+    k.upcase!
+    raise unless k =~ /C\-[A-Z]/
     login unless connected?
-    STDOUT.puts "\n\#\n\# #{ctrl_key k} to terminate.\n\#\n"
+    STDOUT.puts "\n\#\n\# #{k.gsub(/C\-/,'^')} to terminate.\n\#\n"
     reader :start
-    writer k
+    writer(eval "?\\#{k}")
   rescue
   ensure
     begin
@@ -460,13 +462,6 @@ module Expect4r
       @lp = buf.last
     end
     [buf, rc]
-  end
-  def ctrl_key(k)
-    case k
-    when ?\C-c ; '^C'
-    when ?\C-q ; '^Q'
-    when ?\C-z ; '^Z'
-    end
   end
 
   def writer(k)

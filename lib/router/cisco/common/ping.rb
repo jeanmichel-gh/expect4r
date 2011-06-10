@@ -47,7 +47,8 @@ module Ping
 
     end
 
-    r = output[0].find { |x| x =~/Success.*[^\d](\d+) percent \((\d+)\/(\d+)\)/}
+    # r = output[0].find { |x| x =~/Success.*[^\d](\d+) percent \((\d+)\/(\d+)\)/}
+    r = output.join  =~/Success.*[^\d](\d+) percent \((\d+)\/(\d+)\)/
 
     if r && 
       Regexp.last_match(1) && 
@@ -65,7 +66,7 @@ module Ping
       end
 
     else
-      raise ::Expect4r::Router::Error::PingError.new(@host, target_ip_adress, pct_success, pct, tx, rx, output)
+      raise ::Expect4r::Router::Error::PingError.new(@host, target_ip_address, pct_success, pct, tx, rx, output)
     end
 
   end
