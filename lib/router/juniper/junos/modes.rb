@@ -131,7 +131,7 @@ def to_shell
 end
 
 def logged_as_root?
-  @_is_root_ ||=  @lp =~ /root@/
+  ! (@_is_root_ ||=  @lp =~ /root@/).nil?
 end
 
 def to_exec

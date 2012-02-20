@@ -22,8 +22,8 @@ module Modes
     login unless connected?
     case mode
     when :exec    ; exec?
-    when :shell   ; shell?
     when :config  ; config?
+    when :shell   ; shell?
     else
       _mode_?
     end
@@ -32,8 +32,8 @@ module Modes
     login unless connected?
     case mode
     when :exec    ;  to_exec
-    when :shell   ;  to_shell
     when :config  ;  to_config
+    when :shell   ;  to_shell
     end
   end
   def _mode_?
