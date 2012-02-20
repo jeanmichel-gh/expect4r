@@ -56,7 +56,7 @@ class Expect4r::J < ::Expect4r::BaseLoginObject
     @matches << [/Exit with uncommitted changes.+\(yes\)/, 'yes']
     output = putline "commit", arg
     if /error: configuration check-out failed/.match(output.join)
-      rollack
+      rollback
       raise SemanticError.new(self.class.to_s, output)
     end
     output
