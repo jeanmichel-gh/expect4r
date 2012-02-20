@@ -385,6 +385,7 @@ module Expect4r
       err_msg += buf.join("\n    ")
       raise ConnectionError.new(err_msg)
     else
+      @_lp_1 = buf[-2]
       @lp = buf.last
     end
     [buf, ev]
@@ -489,6 +490,7 @@ module Expect4r
             break if c.nil?
             STDOUT.putc c
           end
+        rescue Errno::EIO
         rescue => e
           p e
           p '7777777'
