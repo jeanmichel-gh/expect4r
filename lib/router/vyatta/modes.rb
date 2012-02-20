@@ -55,12 +55,16 @@ def exec(cmd=nil, *args)
 end
 
 def exec?
-  
-  @lp =~ /\$ $/ ? true : false
+  if logged_as_root?
+    ! config?
+  else
+    @lp =~ /\$ $/ ? true : false
+  end
 end
 
 def config?
   if logged_as_root?
+     @_lp_1 =~ /\[edit\]/ ? true : false
   else
     @lp =~ /^.+# $/ ? true : false
   end
@@ -103,7 +107,7 @@ end
 private
 
 def logged_as_root?
-  ! (@_is_root_ ||=  @lp =~ /root@/).nil?
+  ! (@_is_root_ ||=  (@user=='root' and @lp =~ /root@/)).nil?
 end
 
 def _mode_?

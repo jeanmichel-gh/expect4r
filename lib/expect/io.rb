@@ -230,74 +230,6 @@ module Expect4r
   def get_prompt
     putline '', :no_trim=>true, :no_echo=>true
   end
-  
-  def putline(line, arg={})
-    raise ConnectionError.new(line) if child_exited?
-    
-    arg = {:ti=>13, :no_echo=>false, :debug=>0, :sync=> false, :no_trim=>false}.merge(arg)
-    no_echo = arg[:no_echo]
-    ti = arg[:ti]
-    unless arg[:no_trim]==true
-      line = line.gsub(/\s+/,' ').gsub(/^\s+/,'')
-      if line.size==0 
-        log "DEBUG PUTLINE: NOT SENDING **** line = '#{line.inspect}' arg=#{arg.inspect}"
-        return [[], :empty_line]
-      end
-    end
-    sync if arg[:sync]
-    t0 = Time.now
-    exp_puts line
-    output=[]
-    rc, buf = catch(:done) do
-      @r.readbuf(arg[:ti]) do |r|
-        if r._io_exit?
-          r._io_save(no_echo)
-          throw :done, [ :abort,  r._io_buf1]
-        end
-        case r._io_string
-        when @ps1, @ps1_bis
-          unless r._io_more?
-            r._io_save no_echo, "matching PROMPT"
-            # puts  "debug IO BUF 1 #{r._io_buf1.inspect}"
-            throw(:done, [:ok, r._io_buf1])
-          end
-          exp_internal "more..."
-        when /(.+)\r\n/, "\r\n"
-          r._io_save no_echo, "matching EOL"
-        when @more
-          r._io_save no_echo, "matching MORE"
-          putc ' '
-        else
-          # For objects that include Expect4r but do not subclass base Login class.
-          @matches ||= []
-          @matches.each { |match, _send|
-            if r._io_string =~ match
-              r._io_save no_echo, "match #{match}"
-              if _send.is_a?(Proc)
-                _send.call(self)
-              else
-                exp_puts _send
-              end
-            end
-          }
-        end
-      end
-    end
-
-    case rc
-    when :abort
-      elapsed = Time.now - t0
-      if elapsed < ti
-        child_exit
-        raise ConnectionError.new(line)
-      else
-        raise ExpTimeoutError.new(line, elapsed)
-      end
-    else
-      @lp = buf.last
-    end
-    [buf, rc]
-  end
 
   def readline(ti=0.2, matches=[])
     ret = expect(/(.+)\r\n/, ti, matches)
@@ -460,6 +392,7 @@ module Expect4r
         raise ExpTimeoutError.new(line, elapsed)
       end
     else
+      @_lp_1 = buf[-2]
       @lp = buf.last
     end
     [buf, rc]

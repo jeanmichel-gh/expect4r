@@ -39,7 +39,7 @@ module Ping
 
     pct_success = arg.delete(:pct_success) || 99
 
-    output = exec(ping_cmd(host, arg), arg)
+    output = exp_send(ping_cmd(host, arg), arg)
 
     r = output[0].find { |x| x =~/(\d+) packets transmitted, (\d+) received, (\d+)\% packet loss/}
 
