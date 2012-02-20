@@ -119,6 +119,7 @@ module Expect4r
   
   def logout
     child_exit
+    @lp, @_lp_1 = nil,nil
     @pid
   end
   

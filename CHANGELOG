@@ -1,3 +1,23 @@
+=== 0.0.8  Mon Feb 20, 2012
+ 
+ * add V (vyatta) class
+ 
+   V.new :ssh, :user=>'vyatta', :pwd=>'vyatta', :host=>'hostname'
+   V.new_ssh 'hostname'  (default user to vyatta and pwd to vyatta)
+   V.new_ssh :host=> 'hostname', :user=>'root', :pwd=>'123'
+
+   V.new :telnet, :user=>'vyatta', :pwd=>'vyatta', :host=>'hostname'
+   V.new_telnet 'hostname'  (default user to vyatta and pwd to vyatta)
+   V.new_telnet :host=> 'hostname', :user=>'root', :pwd=>'123'
+   
+   v.ping '10.0.0.1'
+   v.ping('10.0.0.1', :count=>5) { |r| r.interact }
+   v.ping('10.0.0.1', :count=>5, :size=>512, ...) { |r| r.interact }
+    
+ * modify ping to accept a block to be exececuted on error
+    eg, 
+       r.ping('10.0.0.1', :count=> 100, :size=>512) { |r| r.interact }
+	   
 === 0.0.7.dev Thu Dec 16, 2010
 
  * fix _io_save bug when no_echo
