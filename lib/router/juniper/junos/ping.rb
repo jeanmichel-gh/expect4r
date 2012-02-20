@@ -21,7 +21,7 @@ module Ping
   #   :size=> 512
   #   :protocol=> 'ipv4', :count=> 20, :size=> 1500, :timeout=>5, :ttl=>16
   #
-  def ping(host, arg={})
+  def ping(host, arg={}, &on_error)
 
     pct_success = arg.delete(:pct_success) || 99
 
@@ -45,7 +45,11 @@ module Ping
       end
 
     else
-      raise ::Expect4r::Router::Error::PingError.new(@host, host, pct_success, $1.to_i, tx, rx, output)
+      if on_error
+        on_error.call(self)
+      else
+        raise ::Expect4r::Router::Error::PingError.new(@host, host, pct_success, $1.to_i, tx, rx, output)
+      end
     end
 
   end
