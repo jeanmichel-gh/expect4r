@@ -6,6 +6,7 @@ module Expect4r
   autoload :Iox,    'router/cisco/iox/iox'
   autoload :Ios,    'router/cisco/ios/ios'
   autoload :J,      'router/juniper/junos/junos'
+  autoload :V,      'router/vyatta/vyatta'
   autoload :Shell,  'misc/shell'
   autoload :RShell, 'misc/shell'
 
@@ -30,6 +31,11 @@ module Expect4r
     end
     module Iox
       autoload :Modes, 'router/cisco/iox/modes'
+    end
+    module Vyatta
+      autoload :Modes, 'router/vyatta/modes'
+      autoload :Ping, 'router/vyatta/ping'
+      autoload :Show, 'router/vyatta/show'
     end
     module Junos
       autoload :Modes, 'router/juniper/junos/modes'
