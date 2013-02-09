@@ -29,6 +29,7 @@ class Expect4r::Ios < ::Expect4r::BaseLoginObject
   end
   
   def enable_password
+    return unless @pwd || @enable_password
     @enable_password ||= @pwd  # FIXME
     Expect4r.decipher(@pwd)    # password is ciphered ...
   end

@@ -76,7 +76,7 @@ module Modes
   # returns *true* if router is in <tt>:user</tt> mode,  *false* otherwise.
   #
   def user?
-    @lp =~ /.+>\s*$/
+    @lp.split.last =~ /.+>\s*$/
   end
     
   def to_config

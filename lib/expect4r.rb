@@ -1,4 +1,5 @@
 require 'expect/io'
+require 'misc/base.rb'
 require 'misc/passwd'
 
 module Expect4r

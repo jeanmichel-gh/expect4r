@@ -1,3 +1,18 @@
+=== 0.0.9  Sat Feb 9, 2013
+
+ * Fix few issues when telneting to ios
+    send \r instead of \n to get to enabled mode
+	don't try and derive enable_password from password if no password
+
+ * Vyatta: 
+      add on_error block for ping 
+	  	
+ * moved Base class out of io.rb to misc/base.rb
+ 
+ * Update gem file
+      add misc/base.rb
+
+
 === 0.0.8  Mon Feb 20, 2012
  
  * add V (vyatta) class

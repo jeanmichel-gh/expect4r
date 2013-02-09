@@ -1,5 +1,5 @@
 require 'rake'
-require 'rake/rdoctask'
+require 'rdoc/task'
 require 'rake/testtask'
 require "rake/clean"
 
@@ -71,7 +71,7 @@ Rake::RDocTask.new do |t|
   t.options << '--fileboxes'
 end
 
-require 'rake/gempackagetask'
+require 'rubygems/package_task'
 
 namespace :gem do
 

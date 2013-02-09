@@ -19,5 +19,13 @@ module Show
     end
   end
   
+  # count | match | no-match | no-more | more
+  def method_missing(name, *args, &block)
+    @invalid_inputs ||=[]
+    super if @invalid_inputs.include?(name.to_s)
+    cmd = name.to_s.split('_').join(' ')
+    cmd += ""
+  end
+
 end
 end

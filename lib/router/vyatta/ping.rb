@@ -37,7 +37,8 @@ module Ping
   #++
   def ping(host, arg={}, &on_error)
 
-    pct_success = arg.delete(:pct_success) || 99
+    pct_success    = arg.delete(:pct_success)    || 99
+    raise_on_error = arg.delete(:on_error_raise) || true
 
     output = exp_send(ping_cmd(host, arg), arg)
 
@@ -63,7 +64,9 @@ module Ping
       if on_error
         on_error.call(self)
       else
-        raise ::Expect4r::Router::Error::PingError.new(@host, host, pct_success, $1.to_i, tx, rx, output)
+        if raise_on_error
+          raise ::Expect4r::Router::Error::PingError.new(@host, host, pct_success, $1.to_i, tx, rx, output)
+        end
       end
 
     end

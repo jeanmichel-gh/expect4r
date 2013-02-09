@@ -11,7 +11,7 @@ module Common
   end
 
   def io_escape_char_cb
-    putc "\n" if console?
+    putc "\r" if console?
   end
 
 end
