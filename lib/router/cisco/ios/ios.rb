@@ -70,5 +70,32 @@ class Expect4r::Ios < ::Expect4r::BaseLoginObject
     string_start_with_pct_char?(output[-2]) || 
     string_start_with_pct_char?(output[-3])
   end
+
+  def method_missing(name, *args, &block)
+    if name.to_s =~ /^show_/
+      filters=[]
+      if args.last.is_a?(Hash)
+        _begin = args.last.delete(:begin) 
+        _section = args.last.delete(:section)
+        _count = args.last.delete(:count)
+        _exclude = args.last.delete(:exclude)
+        _include = args.last.delete(:include)
+        filters << "| begin #{_begin}" if _begin
+        filters << "| count #{_count}" if _count
+        filters << "| section #{_section}" if _section
+        filters << "| exclude #{_exclude}" if _exclude
+        filters << "| include #{_include}" if _include
+      end   
+      cmd = name.to_s.split('_').join(' ')
+      cmd += " " + filters.join(' ') if filters
+      cmd.gsub!(/running config/, 'running-config')
+      output = __send__ :exec, cmd, *args
+    elsif name.to_s =~ /^shell_/
+      cmd = name.to_s.split('_')[1..-1].join(' ') + args.join(' ')
+      output = __send__ :shell, cmd, *args
+    else
+      super
+    end
+  end
   
 end
