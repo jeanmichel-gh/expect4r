@@ -35,6 +35,13 @@ class Expect4r::Ios < ::Expect4r::BaseLoginObject
   end
   
   def login(arg={})
+    # Skip the default banner.
+    proc = Proc.new {
+      read_until /QUICK START GUIDE/, 2
+    }
+    @pre_matches = []
+    @pre_matches << [/Cisco Configuration Professional/, proc]
+    
     super(spawnee,arg)
     enable
     exec "term len 0\nterm width 0"

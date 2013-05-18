@@ -239,6 +239,13 @@ module Expect4r
     ''
   end
 
+  def read_until(match,ti=0.2)
+    ret = expect(match, ti, [])
+    ret[0][0].chomp
+  rescue ExpTimeoutError => ex
+    ''
+  end
+
   def connected?
     @r && (not child_exited?)
   end
@@ -271,6 +278,19 @@ module Expect4r
           exp_internal "readbuf: _io_exit?"
           throw :done, [ :cnx_error,  read_pipe._io_buf1]
         end
+        
+        @pre_matches ||= []
+        @pre_matches.each do |match, _send|
+          if read_pipe._io_string =~ match
+            read_pipe._io_save no_echo, "match #{match}"
+            if _send.is_a?(Proc)
+              _send.call
+            else
+              exp_puts _send.to_s
+            end
+          end
+        end
+        
         case read_pipe._io_string
         when spawnee_prompt
           read_pipe._io_save no_echo, "match PROMPT"
