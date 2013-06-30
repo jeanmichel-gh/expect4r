@@ -16,6 +16,12 @@ module Error
     end
   end
 
+  class BadPasswordError < RouterError
+    def err_msg
+      "#{@rname} [BadPassword] : #{@msg}"
+    end
+  end
+
   class SemanticError < RouterError
     def err_msg
       "#{@rname} [SemanticError] : #{@msg}"

@@ -16,46 +16,11 @@ class Expect4r::Ios < ::Expect4r::BaseLoginObject
     @ps1 = /(.*)(>|#|\$)\s*$/
     @more = / --More-- /
   end
-  
-  def enable
-    @enable_password ||= @pwd
-    enable_pwd = [/^Password: $/, enable_password]
-    @matches << enable_pwd
-    exp_send 'enable'
-  rescue 
-    raise
-  ensure
-    @matches.delete enable_pwd
-  end
-  
-  def enable_password
-    return unless @pwd || @enable_password
-    @enable_password ||= @pwd  # FIXME
-    Expect4r.decipher(@pwd)    # password is ciphered ...
-  end
-  
-  def login(arg={})
-    # Skip the default banner.
-    proc = Proc.new {
-      read_until /QUICK START GUIDE/, 2
-    }
-    @pre_matches = []
-    @pre_matches << [/Cisco Configuration Professional/, proc]
     
-    super(spawnee,arg)
-    enable
-    exec "term len 0\nterm width 0"
-    self
-  end
-  # FIXME: 1.9.2 bug: 
-  # It calls LoginBaseOject#login() instead of calling J#login()
-  # modified login_by_proxy to call _login_ seems to work.
-  alias :_login_ :login
-  
-  
   def putline(line,*args)
     output, rc = super
     return output unless error?(output)
+    raise BadPasswordError.new(self.class.to_s,line) if output =~ /Bad password/ 
     raise SyntaxError.new(self.class.to_s,line)
   end
   

@@ -42,6 +42,43 @@ module CiscoCommon
       super
     end
   end
+  
+  def enable
+    proc = Proc.new {
+      puts "FOUND WE HAVE A BAD PASSWORD SITUATION"
+    }
+    @pre_matches ||= []
+    @pre_matches << [/Bad Password/i, proc]
+
+    enable_pwd = [/^Password: $/, spawnee_enable_password]
+    @matches << enable_pwd
+    exp_send 'enable'
+    @matches =[]
+    @pre_matches=[]
+    exec "term len 0\nterm width 0"
+  rescue 
+    raise
+  ensure
+    @matches.delete enable_pwd
+  end
+    
+  def login(arg={})
+    # Skip the default banner.
+    proc = Proc.new {
+      read_until /QUICK START GUIDE/, 2
+    }
+    @pre_matches = []
+    @pre_matches << [/Cisco Configuration Professional/, proc]
+    
+    super(spawnee,arg)
+    enable unless arg[:no_enable]
+
+    self
+  end
+  # FIXME: 1.9.2 bug: 
+  # It calls LoginBaseOject#login() instead of calling J#login()
+  # modified login_by_proxy to call _login_ seems to work.
+  alias :_login_ :login
     
 end
 end
