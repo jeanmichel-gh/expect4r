@@ -151,13 +151,21 @@ module Expect4r
     raise
   end
 
-  def interact(k="C-z")
-    k.upcase!
-    raise unless k =~ /C\-[A-Z]/
+  def interact(k="C-t")
+    raise unless k =~ /C\-[A-Z]/i
+    unless STDOUT.tty? and STDIN.tty?
+      $stderr.puts "Cannot interact: not running from terminal!"
+      return
+    end
     login unless connected?
-    STDOUT.puts "\n\#\n\# #{k.gsub(/C\-/,'^')} to terminate.\n\#\n"
-    reader :start
-    writer(eval "?\\#{k}")
+    @@interact_mutex ||= Mutex.new
+
+    @@interact_mutex.synchronize {
+      k.upcase!
+      STDOUT.puts "\n\#\n\# #{k.gsub(/C\-/,'^')} to terminate.\n\#\n"
+      reader :start
+      writer(eval "?\\#{k}")
+    }
   rescue
   ensure
     begin
