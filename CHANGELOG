@@ -1,16 +1,32 @@
-=== 0.0.11 Sat Jun 29, 2013
+=== 0.0.11 Thu Sep 18, 2014
 
- * Support setting enable password.
-	
+ * Adding connection retry mechanism.
+   When enabled, instead of getting an IO error 
+   when attempting to read or write from a disconnected session,
+   the connection will be re-established and then read or write command retried.
+    
+   s = Expect4r::Ios.new_ssh ...
+   s.connect_retry
+   s.connect_retry=
+   s.login
+      
+   Connection retry is disabled by default: 
+   irb > s.connect_retry 
+   => 0
+   to enable it, set then number of connection retry attemtpts:
+   irb > s.connect_retry= 10
+   => 10
+   
+=== 0.0.10 Tue Aug 6, 2013
 
-=== 0.0.10  Sat May 18, 2013
+ * Adding support ios enable password
 
  * Fix an issue reported by Gael Leonet where the ios default login banner
    is getting in the way of matching the username.
 
 === 0.0.9  Sat Feb 9, 2013
 
- * Fix few issues when telneting to ios
+ * Fix few issues when telnetting to ios
     send \r instead of \n to get to enabled mode
 	don't try and derive enable_password from password if no password
 

@@ -20,6 +20,37 @@ You talk to routers by connecting to them using ssh or telnet and send exec or c
    my_mac = RShell.new_ssh 'mac', 'me'
    router = Iox.new_telnet 'hostname', 'username'
    router.login_via my_mac
+   
+* Re-establish connection 
+   
+   irb> localhost = Expect4r::BaseLoginObject.new_ssh :hostname=>'localhost'
+   irb> localhost.connect_retry=10
+   irb> localhost.login
+   irb> localhost.interact
+   irb> s.interact
+
+   #
+   # ^T to terminate. 
+   #
+
+   [jme@localhost ~]$ ps -ax | grep localhost
+     5497 pts/8    Ss+    0:00 ssh localhost
+     5592 pts/9    S+     0:00 grep --color=auto localhost
+   [jme@localhost ~]$ kill 5497
+    Killed by signal 15.
+   
+   [jme@localhost ~]$ 
+   [jme@localhost ~]$  ls
+   Desktop    Downloads            Music     Public     Videos
+   Documents  expect4r-0.0.11.gem  Pictures  Templates
+   [jme@localhost ~]$ ps -ax | grep localhost
+     5648 pts/9    Ss+    0:00 ssh localhost
+     5777 pts/10   S+     0:00 grep --color=auto localhost
+   [jme@localhost ~]$ 
+   [jme@localhost ~]$ ^T
+   irb>    
+   
+   
 
 * Push configurations to routers
 
@@ -41,7 +72,7 @@ You talk to routers by connecting to them using ssh or telnet and send exec or c
       interface GigabitEthernet0/2/0/0
       desc to switch port 13'
       ipv4 address 190.0.0.9 255.255.255.252'
-      no shut'
+      no shut
    |
 
    j.config %{
@@ -69,13 +100,13 @@ You talk to routers by connecting to them using ssh or telnet and send exec or c
    irb> r.interact
 
    #
-   # ^Z to terminate.
+   # ^T to terminate.
    #
 
    router#clear line 2
    [confirm]
     [OK]
-   router# ^Z
+   router# ^T
    => nil
    irb> 
 
@@ -83,7 +114,7 @@ You talk to routers by connecting to them using ssh or telnet and send exec or c
    irb(main):210:0* j.interact
    
    #
-   # ^Z to terminate.
+   # ^T to terminate.
    #
    
    jme@router> configure 
@@ -98,7 +129,7 @@ You talk to routers by connecting to them using ssh or telnet and send exec or c
    jme@router# show | compare 
    
    [edit]
-   jme@router# ^Z
+   jme@router# ^T
    => nil
    irb(main):211:0> 
    

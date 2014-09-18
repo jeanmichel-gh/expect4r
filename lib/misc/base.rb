@@ -145,8 +145,11 @@ module Expect4r
       self
     end
 
-    attr_writer :host, :username, :port
+    attr_writer :host, :user, :port
     alias :hostname= :host=
+    alias :username= :user=
+
+    attr_accessor :ssh_options
     
     def method=(arg)
       case arg
@@ -160,7 +163,12 @@ module Expect4r
     def spawnee
       case method
       when :telnet  ; "telnet #{host} #{port if port>0}"
-      when :ssh     ; "ssh #{spawnee_username}@#{host} #{port if port>0}"
+      when :ssh
+        cmd  ="ssh #{host}"
+        cmd +=" -oPort=#{port}"             if port>0
+        cmd +=" -oUser=#{spawnee_username}" if spawnee_username
+        cmd += [" ", [ssh_options]].flatten.join(" ") if ssh_options
+        cmd
       else
         raise RuntimeError
       end
@@ -172,6 +180,15 @@ module Expect4r
 
     def spawnee_prompt
       @ps1
+    end
+
+    def connect_retry
+      @connect_retry ||= 0
+    end
+
+    def connect_retry=(arg)
+      raise ArgumentError unless (0 .. 100_000) === arg
+      @connect_retry = arg
     end
     
     def dup

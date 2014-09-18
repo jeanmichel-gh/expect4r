@@ -137,27 +137,52 @@ module Expect4r
   end
   
   def exp_print(s)
-    exp_internal "print: #{s.inspect}, io_writer: #{@w}"
-    return unless @w
-    @w.print(s) and flush
-  rescue Errno::EIO, Errno::ECHILD
-    child_exit
-    raise
+    _retry=self.connect_retry
+    begin
+      exp_internal "print: #{s.inspect}, io_writer: #{@w}"
+      return unless @w
+      @w.print(s) and flush
+    rescue Errno::EIO, Errno::ECHILD
+      child_exit
+      exp_internal "session disconnected: retrying..."
+      raise unless _retry>0
+      _retry -=1
+      sleep(1)
+      self.login
+      retry
+    end
   end
+  
   def getc
-    @r.getc if @r
-  rescue Errno::EIO, Errno::ECHILD
-    child_exit
-    raise
+    _retry=self.connect_retry
+    begin
+      @r.getc if @r
+    rescue Errno::EIO, Errno::ECHILD
+      child_exit
+      exp_internal "session disconnected: retrying..."
+      raise unless _retry>0
+      _retry -=1
+      sleep(1)
+      self.login
+      retry
+    end
   end
 
-  def interact(k="C-z")
-    k.upcase!
-    raise unless k =~ /C\-[A-Z]/
+  def interact(k="C-t")
+    raise unless k =~ /C\-[A-Z]/i
+    unless STDOUT.tty? and STDIN.tty?
+      $stderr.puts "Cannot interact: not running from terminal!"
+      return
+    end
     login unless connected?
-    STDOUT.puts "\n\#\n\# #{k.gsub(/C\-/,'^')} to terminate.\n\#\n"
-    reader :start
-    writer(eval "?\\#{k}")
+    @@interact_mutex ||= Mutex.new
+
+    @@interact_mutex.synchronize {
+      k.upcase!
+      STDOUT.puts "\n\#\n\# #{k.gsub(/C\-/,'^')} to terminate.\n\#\n"
+      reader :start
+      writer(eval "?\\#{k}")
+    }
   rescue
   ensure
     begin
@@ -256,7 +281,7 @@ module Expect4r
   end
   alias :login_via :login_by_proxy
   
-  def _login(cmd, arg={})
+  def _login(cmd=self.spawnee, arg={})
     
     return if connected?
 
@@ -343,7 +368,7 @@ module Expect4r
     end
     [buf, ev]
   end
-  
+
   alias :login :_login
   
   
@@ -358,7 +383,7 @@ module Expect4r
  
   #FIXME ? putline to send_cmd ? 
   # hide putline and expose cmd
-  def putline(line, arg={})
+  def _putline_(line, arg={})
     raise ConnectionError.new(line) if child_exited?
     
     arg = {:ti=>13, :no_echo=>false, :debug=>0, :sync=> false, :no_trim=>false}.merge(arg)
@@ -421,6 +446,21 @@ module Expect4r
     end
     [buf, rc]
   end
+  
+  def putline(*args)
+    _retry=self.connect_retry
+    begin
+      _putline_(*args)
+    rescue Errno::EIO, Errno::ECHILD
+      child_exit
+      exp_internal "session disconnected: retrying..."
+      raise unless _retry>0
+      _retry -=1
+      sleep(1)
+      self.login
+      retry
+    end
+  end
 
   def writer(k)
     stty_raw
@@ -450,7 +490,6 @@ module Expect4r
         rescue Errno::EIO
         rescue => e
           p e
-          p '7777777'
         ensure
           stty_cooked
         end
