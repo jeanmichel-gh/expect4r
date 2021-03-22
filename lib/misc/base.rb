@@ -95,7 +95,7 @@ module Expect4r
         when 6
           @method, host, @user, _pwd, _enable_pwd, port = args
         when 5
-          if args.last.is_a?(Fixnum)
+          if args.last.is_a?(Integer)
             @method, host, @user, _pwd, port = args
           else
             @method, host, @user, _pwd, _enable_pwd = args
