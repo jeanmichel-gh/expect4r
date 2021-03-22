@@ -9,14 +9,14 @@ begin
     def self.cipher(this, pwd='expect4r')
       c = OpenSSL::Cipher.new("aes-256-cbc")
       c.encrypt
-      c.key = key = Digest::SHA1.hexdigest(pwd)
+      c.key = key = Digest::SHA1.hexdigest(pwd)[0..31]
       e = c.update(this)
       e << c.final
     end
     def self.decipher(cipher,pwd='expect4r')
       c = OpenSSL::Cipher.new("aes-256-cbc")
       c.decrypt
-      c.key = key = Digest::SHA1.hexdigest(pwd)
+      c.key = key = Digest::SHA1.hexdigest(pwd)[0..31]
       d = c.update(cipher)
       d << c.final
     end
