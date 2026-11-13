@@ -6,13 +6,12 @@ Gem::Specification.new do |spec|
   spec.version = [:major, :minor, :patch].map { |part| version.fetch(part) }.join('.')
   spec.authors = ['Jean-Michel Esnault']
   spec.email = 'jesnault@gmail.com'
-  spec.summary = 'Script terminal dialogues in Ruby with Expect-style patterns and router adapters'
-  spec.description = 'A PTY dialogue engine with ordered pattern/action blocks, explicit deadlines, bounded buffers and router automation policies.'
+  spec.summary = 'Script terminal dialogues in Ruby with Expect-style patterns'
+  spec.description = 'A PTY dialogue engine with ordered pattern/action blocks, explicit deadlines and bounded buffers.'
   spec.homepage = 'https://github.com/jeanmichel-gh/expect4r'
   spec.license = 'Nonstandard' # See the existing LICENSE and COPYING; terms are unchanged.
-  spec.files = Dir.chdir(__dir__) { %w[LICENSE COPYING README.md CHANGELOG VERSION.yml ASSESSMENT.md] + Dir['lib/**/*.rb', 'docs/*', 'examples/*.rb', 'test/fixtures/*'] }
+  spec.files = Dir.chdir(__dir__) { %w[LICENSE COPYING README.md CHANGELOG VERSION.yml ASSESSMENT.md] + Dir['lib/**/*.rb', 'docs/*', 'examples/*.rb'] }
   spec.require_paths = ['lib']
   spec.required_ruby_version = '>= 4.0.6'
   spec.add_dependency 'expect-pty', '= 0.10.1'
-  spec.add_dependency 'highline', '>= 3.1', '< 4'
 end

@@ -1,19 +1,19 @@
 # frozen_string_literal: true
-require_relative '../test_helper'
-require 'expect4r/router'
-class RouterTest < CoreTest
-  FIXTURE = File.expand_path('../fixtures/router_cli.rb', __dir__)
+require_relative 'test_helper'
+require 'expect4r_routers'
+class RouterTest < RouterApplicationTest
+  FIXTURE = File.expand_path('fixtures/router_cli.rb', __dir__)
   def router(adapter: :ios, scenario: 'normal', fragment: false, **options, &block)
     argv = [RbConfig.ruby, FIXTURE, "--adapter=#{adapter}", "--scenario=#{scenario}"]
     argv << '--fragment' if fragment
-    Expect4r::Router.spawn(adapter, *argv, user: 'lab', password: -> { 'secret' }, **options, &block)
+    Expect4rRouters::Router.spawn(adapter, *argv, user: 'lab', password: -> { 'secret' }, **options, &block)
   end
   def test_login_and_exact_output_with_fragmented_prompts
     router(fragment: true) do |device|
       result = device.exec!('show version', timeout: 3)
       assert_equal "Simulator ios\r\n  quoted spaces stay   here\r\n\r\nBuild 42\r\n", result.output
-      assert_equal :exec, result.mode_before
-      assert_equal :exec, result.mode_after
+      assert_equal :admin, result.mode_before
+      assert_equal :admin, result.mode_after
       assert_equal 'router#', result.prompt
       assert result.success?
     end
@@ -28,10 +28,10 @@ class RouterTest < CoreTest
   def test_errors_and_command_sequences
     router do |device|
       assert_equal :device_error, device.exec('bad command').status
-      assert_raise(Expect4r::CommandError) { device.exec!('bad command') }
+      assert_raise(Expect4rRouters::CommandError) { device.exec!('bad command') }
       results = device.exec_many(['show version', 'bad command', 'show version'])
       assert_equal 2, results.size
-      error = assert_raise(Expect4r::CommandError) { device.exec_many!(['show version', 'bad command']) }
+      error = assert_raise(Expect4rRouters::CommandError) { device.exec_many!(['show version', 'bad command']) }
       assert_equal 2, error.progress.size
       assert_raise(ArgumentError) { device.exec("show version\nreload") }
     end
@@ -43,7 +43,7 @@ class RouterTest < CoreTest
       assert_nil result.output
       assert_equal 1000, sink.string.lines.size
       assert_equal sink.string.bytesize, result.output_bytes
-      assert_raise(Expect4r::OutputLimitError) { device.exec('show version') }
+      assert_raise(Expect4rRouters::OutputLimitError) { device.exec('show version') }
       assert_equal :uncertain, device.state
     end
   end
@@ -53,7 +53,7 @@ class RouterTest < CoreTest
       assert_equal :timeout, result.status
       assert_equal "partial output\r\n", result.output
       assert_equal :uncertain, device.state
-      assert_raise(Expect4r::CommandError) { device.exec('show version') }
+      assert_raise(Expect4rRouters::CommandError) { device.exec('show version') }
       device.resynchronize!(timeout: 1)
       assert_equal :ready, device.state
       assert device.exec!('show version').success?
@@ -68,24 +68,24 @@ class RouterTest < CoreTest
     end
   end
   def test_authentication_and_host_key_failures
-    assert_raise(Expect4r::AuthenticationError) do
-      Expect4r::Router.spawn(:ios, RbConfig.ruby, FIXTURE, user: 'lab', password: 'wrong')
+    assert_raise(Expect4rRouters::AuthenticationError) do
+      Expect4rRouters::Router.spawn(:ios, RbConfig.ruby, FIXTURE, user: 'lab', password: 'wrong')
     end
-    assert_raise(Expect4r::HostKeyError) { router(scenario: 'host_key') {} }
+    assert_raise(Expect4rRouters::HostKeyError) { router(scenario: 'host_key') {} }
   end
   def test_ios_configuration_is_applied_immediately_and_restores_mode
     router do |device|
       result = device.configure do |config|
         config.command 'description "spaces   kept"'
-        assert_raise(Expect4r::UnsupportedOperation) { config.commit }
+        assert_raise(Expect4rRouters::UnsupportedOperation) { config.commit }
       end
-      assert_equal :exec, result.mode
+      assert_equal :admin, result.mode
       assert_equal 1, result.commands.size
       assert_include device.exec!('show running-config').output, 'description "spaces   kept"'
-      assert_raise(Expect4r::CommandError) do
+      assert_raise(Expect4rRouters::CommandError) do
         device.configure { |config| config.command 'first applied'; config.command 'bad command' }
       end
-      assert_equal :exec, device.mode
+      assert_equal :admin, device.mode
       assert_include device.exec!('show running-config').output, 'first applied'
     end
   end
@@ -96,20 +96,20 @@ class RouterTest < CoreTest
       assert_include device.exec!('show configuration').output, 'set system host-name test'
       device.configure { |config| config.command 'set system host-name discarded' }
       assert_not_include device.exec!('show configuration').output, 'discarded'
-      assert_equal :exec, device.mode
+      assert_equal :operational, device.mode
     end
   end
   def test_failed_commit_and_lock_do_not_leave_config_mode
     router(adapter: :junos, scenario: 'commit_failure') do |device|
-      assert_raise(Expect4r::CommandError) do
+      assert_raise(Expect4rRouters::CommandError) do
         device.configure { |config| config.command 'set bad config'; config.commit }
       end
-      assert_equal :exec, device.mode
+      assert_equal :operational, device.mode
       assert_not_include device.exec!('show configuration').output, 'set bad config'
     end
     router(adapter: :junos, scenario: 'locked') do |device|
-      assert_raise(Expect4r::CommandError) { device.configure { raise 'should not enter' } }
-      assert_equal :exec, device.mode
+      assert_raise(Expect4rRouters::CommandError) { device.configure { raise 'should not enter' } }
+      assert_equal :operational, device.mode
     end
   end
 
@@ -119,7 +119,7 @@ class RouterTest < CoreTest
       assert_include device.exec!('show running-config').output, 'description committed'
       device.configure { |config| config.command 'description discarded' }
       assert_not_include device.exec!('show running-config').output, 'discarded'
-      assert_equal :exec, device.mode
+      assert_equal :admin, device.mode
     end
   end
 

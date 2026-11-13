@@ -7,7 +7,7 @@ Baseline: Ruby >= 4.0.6, Linux and macOS, POSIX PTYs. The v2 package now declare
 
 A general-purpose Ruby library for scripted conversations with terminal programs, with router automation built on the same conversation primitives. The primary abstraction is a session with ordered pattern/action alternatives. Ruby variables, methods and control flow remain available throughout.
 
-The `Expect4r` namespace and gem name are retained for continuity. A future major release loads the new API through `require 'expect4r'`. Legacy behavior is isolated behind `require 'expect4r/legacy'` if a compatibility adapter proves useful; loading either entry point must not silently activate the other. The migration package/entry-point arrangement must be implemented and tested before a v2 release.
+The `Expect4r` namespace and gem name are retained for continuity. A future major release loads the new API through `require 'expect4r'`. Legacy behavior is isolated behind `require 'expect4r/legacy'` if a compatibility adapter proves useful; loading either entry point must not silently activate the other. The preserved source-only compatibility tree is now under `legacy/lib`, excluded from both new gems. Router functionality is packaged separately as `expect4r-routers` under `Expect4rRouters`.
 
 The core is independent of router vendors, SSH credentials and prompt conventions. No IO/Kernel patches, global configuration, global session registry, modified thread exception policy or parent-process environment changes.
 
@@ -347,9 +347,9 @@ Any selected EOF returns for that source, even if other sources remain open. The
 The core remains usable without loading vendor adapters. A router wraps a Session and uses only the public dialogue API.
 
 ```ruby
-require 'expect4r/router'
+require 'expect4r_routers'
 
-Expect4r::Router.open(:ios, host: 'lab-router', user: 'lab',
+Expect4rRouters.open(:ios, host: 'lab-router', user: 'lab',
                       password: -> { ENV.fetch('ROUTER_PASSWORD') },
                       ssh: { host_key_policy: :strict }) do |router|
   result = router.exec('show version', timeout: 15)
@@ -377,7 +377,7 @@ After timeout, EOF, overflow or transport failure, mark the router `:uncertain`;
 ### 14.2 Configuration and commit
 
 ```ruby
-Expect4r::Router.open(:junos, host: 'lab-router', user: 'lab') do |router|
+Expect4rRouters.open(:junos, host: 'lab-router', user: 'lab') do |router|
   router.configure do |config|
     config.command 'set interfaces lo0 unit 0 description "managed by Ruby"'
     config.commit

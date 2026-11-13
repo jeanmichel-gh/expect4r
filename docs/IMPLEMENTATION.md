@@ -16,9 +16,9 @@ Linux tests use a disposable copy only.
 | `lib/expect4r/result.rb` | Immutable received-byte snapshots and event results |
 | `lib/expect4r/interaction.rb` | Human terminal handoff and restoration |
 | `lib/expect4r/diagnostics.rb` | Streaming literal redaction |
-| `lib/expect4r/router.rb` | Login, prompt policy, paging, command capture, modes and configuration |
-| `test/fixtures/router_cli.rb` | Independent CLI simulator; does not import production code |
-| `lib/expect4r/legacy.rb` | Preserved loader for the original implementation |
+| `applications/routers/lib/expect4r_routers/router.rb` | Login, prompt policy, paging, command capture, modes and configuration |
+| `applications/routers/test/fixtures/router_cli.rb` | Independent CLI simulator; does not import production code |
+| `legacy/lib/expect4r/legacy.rb` | Preserved loader for the original implementation |
 
 `expect-pty` 0.10.1 owns PTY creation, direct argv startup and child lifecycle.
 The wrapper uses its public APIs only. Its matcher and tail-trimming buffers are
@@ -46,7 +46,7 @@ Two runnable examples provide end-to-end checks:
 
 ```sh
 rv run bundle exec ruby examples/local_dialogue.rb
-rv run bundle exec ruby examples/local_router.rb
+rv run bundle exec ruby applications/routers/examples/local_router.rb
 ```
 
 The simulator's output and behavior are synthetic; they are not recordings of
@@ -55,16 +55,17 @@ sanitized device captures are available.
 
 ## Verified environments
 
-Verified on 2026-11-13:
+Verified on 2026-11-13 on native macOS ARM64 using `rv` Ruby 4.0.9:
 
-| Environment | Modern suite | Isolated legacy suite |
-|---|---|---|
-| Native macOS ARM64, `rv` Ruby 4.0.9 | 56 tests, 209 assertions, all passed | 20 tests, 68 assertions, all passed |
-| Linux ARM64 container, Ruby 4.0.6 | 56 tests, 209 assertions, all passed | 20 tests, 68 assertions, all passed |
+| Suite | Tests | Assertions | Result |
+|---|---:|---:|---|
+| Core | 45 | 161 | Passed |
+| Router application | 27 | 254 | Passed |
+| Historical compatibility | 20 | 68 | Passed |
 
-Both examples ran successfully on macOS and Linux. The gem was built and installed
-into an isolated workspace directory on the Mac, then exercised through its
-installed load path. `git diff --check` and workflow YAML parsing passed.
+Earlier, before the mode/ping expansion and package split, Linux ARM64 Ruby 4.0.6
+passed 56 modern tests/209 assertions and 20 legacy tests/68 assertions. That
+result does not validate the latest changes on Linux.
 
 Core and legacy tests run in different Ruby processes so the old IO patches
 cannot affect new engine results. The process cleanup test includes a child
@@ -106,3 +107,20 @@ mask changes to echo/canonical/signal handling.
 
 The GitHub Actions workflow defines Linux/minimum-Ruby and macOS/rv-Ruby checks.
 It has not run on GitHub; no branch has been pushed and no gem published.
+
+## Package boundary
+
+The root gem contains only generic engine code. `applications/routers` builds
+`expect4r-routers`, which depends on `expect4r`; dependency direction is one way.
+The router application owns command results/errors, vendor dialogues, context
+tracking, ping parsing, fixtures and examples. The historical IO patches live in
+`legacy/`; HighLine is a development dependency for that suite only.
+
+Both runnable examples passed. Both gems built successfully. The package check
+installed the core and its backend dependencies into an empty gem home, verified
+that router/legacy code and HighLine were unavailable, and exercised a real PTY.
+It then installed the companion and exercised simulator show/ping through its
+installed load path. Run `bundle exec ruby script/check_packages.rb` after building.
+
+Run `rake core`, `rake routers` or `rake legacy` independently. `rake test` runs
+all three in separate processes. `rake package_routers` builds both gems.

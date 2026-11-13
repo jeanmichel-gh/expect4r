@@ -37,8 +37,8 @@ timeout/EOF; explicitly requesting or handling an event acknowledges it.
 rv run bundle install
 rv run bundle exec rake test
 rv run bundle exec ruby examples/local_dialogue.rb
-rv run bundle exec ruby examples/local_router.rb
-rv run bundle exec rake package
+rv run bundle exec ruby applications/routers/examples/local_router.rb
+rv run bundle exec rake package_routers
 ```
 
 The `.ruby-version` selects Ruby 4.0.9. To use another supported installed version:
@@ -51,34 +51,14 @@ No VM, credentials or routers are needed. The tests use real local PTYs, socket
 pairs and an independent IOS/Junos/IOS-XR CLI simulator. Legacy tests run in a
 separate Ruby process because the legacy library patches IO and Kernel.
 
-## Router adapter
+## Router application
 
-```ruby
-require 'expect4r/router'
-
-Expect4r::Router.open(:ios, host: 'lab-router', user: 'lab',
-                      password: -> { ENV.fetch('ROUTER_PASSWORD') }) do |router|
-  result = router.exec!('show version')
-  puts result.output
-end
-```
-
-Supported simulator-tested policies: `:ios`, `:iox` and `:junos`. The adapter captures
-output across paging, preserves whitespace, detects defined device errors, and
-marks a timed-out/disconnected connection uncertain. It never replays a command.
-Use explicit `resynchronize!` or reconnect after an uncertain result.
-
-Candidate configuration uses exclusive configuration entry and explicit `commit`.
-Uncommitted candidate changes are discarded when leaving the scope. IOS commands
-apply immediately; the library does not imply rollback on failure.
-
-Default IOS/IOS-XR prompts end at `#` or `>`; Junos prompts include one trailing
-space. For customized prompts, supply an exact `prompt:` String (including its
-trailing space, if any). Remote echo handling assumes the terminal echoes the
-first command line; non-echoing device support needs separate adapter validation.
-Router output is byte-exact after the adapter removes that echo, paging markers
-and the terminal prompt. Output sinks support large responses with bounded
-matching memory; individual lines must fit the session's buffer limit.
+Router automation is a separate gem, **expect4r-routers**, in
+[`applications/routers`](applications/routers/README.md). It owns IOS/IOS-XR/Junos
+login, prompts, user/admin/configuration modes, configuration depth, paging,
+show and vendor-specific ping. Load it with `require 'expect4r_routers'` and use
+`Expect4rRouters.open(...)`. The core installs and runs without this application
+or its vendor rules. See its README for examples and current limitations.
 
 ## Ownership and limits
 
@@ -95,14 +75,16 @@ matching memory; individual lines must fit the session's buffer limit.
 
 ## Existing scripts
 
-V2 is a major API change. Existing scripts can opt into the preserved legacy API:
+V2 is a major API change. The historical implementation lives under `legacy/`
+and is excluded from both new gems. To run an existing script from this checkout:
 
-```ruby
-require 'expect4r/legacy'
+```sh
+ruby -Ilegacy/lib your_script.rb
 ```
 
-The two APIs must run in separate processes. See the
-[legacy examples](docs/LEGACY_README.rdoc) and [migration notes](docs/MIGRATION.md).
+Use `require 'expect4r/legacy'` in that script and install HighLine separately.
+Legacy and modern APIs must run in separate processes. See the
+[legacy examples](legacy/README.rdoc) and [migration notes](docs/MIGRATION.md).
 
 ## Design and validation
 

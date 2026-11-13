@@ -1,5 +1,6 @@
 # Behavioral probes for the legacy engine, not assertions of desired behavior.
 # Run: bundle exec ruby -Ilib script/diagnose_expect.rb
+$LOAD_PATH.unshift(File.expand_path('../legacy/lib', __dir__))
 require 'expect4r/legacy'
 require 'timeout'
 require 'json'

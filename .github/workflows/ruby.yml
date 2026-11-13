@@ -21,5 +21,6 @@ jobs:
           bundler-cache: true
       - run: bundle exec rake test
       - run: bundle exec ruby examples/local_dialogue.rb
-      - run: bundle exec ruby examples/local_router.rb
-      - run: bundle exec rake package
+      - run: bundle exec ruby applications/routers/examples/local_router.rb
+      - run: bundle exec rake package_routers
+      - run: bundle exec ruby script/check_packages.rb

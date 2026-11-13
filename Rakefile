@@ -4,9 +4,9 @@ require 'rdoc/task'
 require 'rubygems/package_task'
 
 CLEAN.include('*.gem', 'pkg', 'rdoc')
-Rake::TestTask.new do |task|
+Rake::TestTask.new(:core) do |task|
   task.libs = ['lib', '.']
-  task.pattern = 'test/{core,router}/**/*test.rb'
+  task.pattern = 'test/core/**/*test.rb'
   task.warning = true
 end
 RDoc::Task.new do |task|
@@ -17,8 +17,18 @@ end
 Gem::PackageTask.new(Gem::Specification.load('expect4r.gemspec')).define
 Rake::TestTask.new(:legacy) do |task|
   task.warning = false
-  task.libs = ['lib', '.']
-  task.pattern = 'test/legacy/**/*test.rb'
+  task.libs = ['legacy/lib', '.']
+  task.pattern = 'legacy/test/**/*test.rb'
 end
-task test: :legacy
+Rake::TestTask.new(:routers) do |task|
+  task.libs = ['lib', 'applications/routers/lib', '.']
+  task.pattern = 'applications/routers/test/**/*test.rb'
+  task.warning = true
+end
+task test: [:core, :routers, :legacy]
+desc 'Build the companion router gem'
+task :package_routers do
+  Dir.chdir('applications/routers') { ruby '-S', 'gem', 'build', 'expect4r-routers.gemspec', '--output', '../../pkg/expect4r-routers-2.0.0.gem' }
+end
+task package_routers: :package
 task default: :test

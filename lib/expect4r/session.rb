@@ -5,7 +5,7 @@ require 'thread'
 module Expect4r
   class Session
     attr_reader :timeout, :write_timeout, :buffer_limit, :line_ending, :last_result,
-                :cleanup_errors, :command, :reader, :writer
+                :cleanup_errors, :command, :reader, :writer, :write_generation
     attr_accessor :trace_bytes
 
     def initialize(backend, timeout:, write_timeout:, buffer_limit:, line_ending:, logger:, transcript:)
@@ -13,6 +13,7 @@ module Expect4r
       @timeout, @write_timeout, @buffer_limit = timeout, write_timeout, buffer_limit
       @line_ending, @logger, @transcript = line_ending, logger, transcript
       @buffer, @cleanup_errors = ''.b, []
+      @write_generation = 0
       @command = backend.command
       @mutex, @owner, @context = Mutex.new, nil, nil
       @redactor = Redactor.new
@@ -77,6 +78,7 @@ module Expect4r
           else
             raise TransportError.new('writer made no progress', bytes_written: offset) unless count.positive?
             offset += count
+            @write_generation += 1
           end
         end
         trace(:write, "#{offset} bytes")

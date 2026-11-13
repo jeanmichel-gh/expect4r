@@ -11,8 +11,7 @@ module Expect4r
   end
   %i[SpawnError TransportError WriteTimeout BufferOverflow EncodingError ExpectTimeout
      UnexpectedEOF BusySessionError ReentrancyError InvalidContinuation EmptyMatchError
-     ResponseLimitError CleanupError UnsupportedOperation AuthenticationError HostKeyError
-     CommandError CommandTimeout ConnectionLost OutputLimitError ConfigurationError].each do |name|
+     ResponseLimitError CleanupError UnsupportedOperation].each do |name|
     const_set(name, Class.new(Error))
   end
 end
