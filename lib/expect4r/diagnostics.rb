@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 require 'logger'
+require 'thread'
 module Expect4r
   # Independent streaming state per channel. Never rewrites protocol bytes.
   class Redactor
@@ -40,6 +41,17 @@ module Expect4r
         end
       end
       output
+    end
+  end
+end
+
+module Expect4r
+  # Internal metadata schema, version 1. Payload bytes and patterns are excluded.
+  module Diagnostics
+    @mutex = Mutex.new
+    @next_id = 0
+    def self.next_id(prefix)
+      @mutex.synchronize { @next_id += 1; "#{prefix}#{@next_id}".freeze }
     end
   end
 end

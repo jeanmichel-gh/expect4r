@@ -12,25 +12,46 @@ module Expect4r
       @sessions = sessions.dup.freeze
       @timeout, @idle, @total = [timeout, idle_timeout, total_timeout].map { |v| Expect4r.duration(v) }
       @consume, @patterns, @counts = consume, PatternSet.new(@sessions), Hash.new(0)
-      patterns.each do |pattern|
-        case pattern
-        when :eof then @patterns.eof
-        when :timeout then @patterns.timeout
-        else @patterns.on(pattern)
+      @wait_id = Diagnostics.next_id("w")
+      begin
+        patterns.each do |pattern|
+          case pattern
+          when :eof then @patterns.eof
+          when :timeout then @patterns.timeout
+          else @patterns.on(pattern)
+          end
         end
+        block.parameters.empty? ? @patterns.instance_exec(&block) : block.call(@patterns) if block
+        raise ArgumentError, 'expect requires at least one pattern or event' if @patterns.rules.empty? && @patterns.events.empty?
+        @patterns.compile!
+      rescue StandardError => error
+        @sessions.each do |source|
+          begin
+            source.diagnostic(:registration_error, registration_wait_id: @wait_id, error_class: error.class.name)
+          rescue StandardError => diagnostic_error
+            source.cleanup_errors << diagnostic_error
+          end
+        end
+        raise
       end
-      block.parameters.empty? ? @patterns.instance_exec(&block) : block.call(@patterns) if block
-      raise ArgumentError, 'expect requires at least one pattern or event' if @patterns.rules.empty? && @patterns.events.empty?
-      @patterns.compile!
       @tag = Object.new
     end
     def run(bang: false)
       acquired = []
       begin
-        @sessions.each { |s| s.acquire!; acquired << s }
+        @sessions.each { |s| s.acquire!; acquired << s; s.diagnostic_wait_id = @wait_id }
+        emit(:wait_start, rule_count: @patterns.rules.size, consume: @consume, timeout: @timeout, idle_timeout: @idle, total_timeout: @total)
+        @patterns.rules.each_with_index do |rule, index|
+          @sessions.each do |source|
+            next if rule.source && !rule.source.equal?(source)
+            source.diagnostic(:rule_registered, pattern_index: index, rule_name: rule.name,
+                              pattern_type: rule.pattern.is_a?(String) ? :literal : :regexp, limit: rule.limit)
+          end
+        end
         raise BufferOverflow, 'clear failed buffer before matching again' if @sessions.any?(&:failed?)
         reset_relative(@started)
         @total_deadline = @total && @started + @total
+        trace_deadlines(:initial)
         polled, continued = false, false
         loop do
           now = Expect4r.monotonic
@@ -65,7 +86,9 @@ module Expect4r
               @in_action = false
             end
             if outcome.first == :continue
+              emit(:continuation, reset_timeout: outcome.last)
               reset_relative if outcome.last
+              trace_deadlines(:continuation) if outcome.last
               continued, polled = true, false
               next
             end
@@ -73,18 +96,34 @@ module Expect4r
               error = result.timeout? ? ExpectTimeout : UnexpectedEOF
               raise error.new("expect ended with #{result.status}", result:)
             end
+            emit(:wait_result, status: result.status, reason: result.reason, selected_session_id: result.session&.session_id)
             return result
           end
           active = @sessions.reject(&:eof?)
           ready = select_readers(active, remaining(now))
           polled = true
           ready.each do |source|
-            @idle_deadline = Expect4r.monotonic + @idle if source.receive && @idle
+            if source.receive && @idle
+              @idle_deadline = Expect4r.monotonic + @idle
+              trace_deadlines(:receive)
+            end
           end
           continued = false
         end
+      rescue Exception => error
+        acquired.each do |source|
+          begin
+            source.diagnostic(:wait_error, error_class: error.class.name)
+          rescue StandardError => diagnostic_error
+            source.cleanup_errors << diagnostic_error
+          end
+        end
+        raise
       ensure
-        acquired.each(&:release!)
+        acquired.each do |source|
+          source.diagnostic_wait_id = nil
+          source.release!
+        end
       end
     end
     def in_action? = @in_action
@@ -99,6 +138,13 @@ module Expect4r
       throw @tag, [:continue, reset_timeout]
     end
     private
+    def emit(event, **fields)
+      @sessions.each { |source| source.diagnostic(event, **fields) }
+    end
+    def trace_deadlines(cause)
+      emit(:deadlines, cause:, relative_deadline: @relative_deadline,
+           idle_deadline: @idle_deadline, total_deadline: @total_deadline)
+    end
     def reset_relative(now = Expect4r.monotonic)
       @relative_deadline = @timeout && now + @timeout
       @idle_deadline = @idle && now + @idle
@@ -122,9 +168,18 @@ module Expect4r
         @sessions.each do |source|
           next if rule.source && !rule.source.equal?(source)
           buf = source.scan_buffer
-          found = match(rule.pattern, buf, source.eof?)
+          begin
+            found = match(rule.pattern, buf, source.eof?)
+          rescue EncodingError => error
+            source.diagnostic(:rule_error, pattern_index: index, rule_name: rule.name, error_class: error.class.name)
+            raise
+          end
+          source.diagnostic(:rule_attempt, pattern_index: index, rule_name: rule.name,
+                            matched: !found.nil?, buffer_offset: source.buffer_offset, buffered_bytes: buf.bytesize)
           next unless found
           offset, length, captures = found
+          source.diagnostic(:match, pattern_index: index, rule_name: rule.name,
+                            from_offset: source.buffer_offset + offset, to_offset: source.buffer_offset + offset + length, bytes: length)
           raise EmptyMatchError, 'pattern matched zero bytes' if length.zero?
           result = Result.new(status: :matched, name: rule.name, pattern_index: index, pattern: rule.pattern,
                               session: source, before: buf.byteslice(0, offset), match: buf.byteslice(offset, length),
@@ -182,6 +237,7 @@ module Expect4r
                           elapsed: Expect4r.monotonic - @started), nil]
     end
     def timeout_result(reason)
+      emit(:timeout, reason:, elapsed: Expect4r.monotonic - @started)
       source = @sessions.one? ? @sessions.first : nil
       result = Result.new(status: :timeout, session: source, before: source ? source.buffer : ''.b,
                           reason:, elapsed: Expect4r.monotonic - @started,

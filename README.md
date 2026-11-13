@@ -73,6 +73,14 @@ or its vendor rules. See its README for examples and current limitations.
 - `sensitive: true` registers literal secrets for diagnostic/transcript filtering.
   Results, protocol IO and explicit terminal output remain raw.
 
+## Diagnostic events
+
+Pass `diagnostics: ->(event) { ... }` and an optional `label:` to a session factory
+to observe matching, byte ranges, consumption, deadlines and manual handoffs.
+Callbacks receive frozen metadata Hashes without protocol bytes or pattern text.
+Tracing is disabled by default. See the [design and usage](docs/DEBUGGING_AND_BUFFERING.md)
+for event semantics, sink failures and the remaining implementation phases.
+
 ## Existing scripts
 
 V2 is a major API change. The historical implementation lives under `legacy/`

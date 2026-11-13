@@ -129,4 +129,6 @@ all three in separate processes. `rake package_routers` builds both gems.
 
 See [the design and phased plan](DEBUGGING_AND_BUFFERING.md) for the current
 capability inventory, Tcl/Expect comparison, proposed APIs and acceptance tests.
-These improvements are planned, not implemented; begin with matcher events (P1).
+P1 metadata events are implemented and tested; P2–P6 remain planned. P1 validation:
+55 core tests/222 assertions, 27 router tests/254 assertions, 20 legacy tests/68
+assertions, plus gem builds and isolated installation checks on rv Ruby 4.0.9.

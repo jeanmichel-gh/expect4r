@@ -48,7 +48,7 @@ module Expect4r
     end
     private
     def settings_for(timeout: 10, write_timeout: 10, buffer_limit: 1_048_576,
-                     line_ending: "\r", logger: nil, transcript: nil)
+                     line_ending: "\r", logger: nil, transcript: nil, diagnostics: nil, label: nil)
       timeout, write_timeout = duration(timeout), duration(write_timeout)
       unless buffer_limit.nil? || (buffer_limit.is_a?(Integer) && buffer_limit.positive?)
         raise ArgumentError, 'buffer_limit must be a positive Integer or nil'
@@ -56,7 +56,9 @@ module Expect4r
       raise TypeError, 'line_ending must be a String' unless line_ending.is_a?(String)
       raise TypeError, 'logger must support info and debug' if logger && !(logger.respond_to?(:info) && logger.respond_to?(:debug))
       raise TypeError, 'transcript must support write' if transcript && !transcript.respond_to?(:write)
-      { timeout:, write_timeout:, buffer_limit:, line_ending: String.new(line_ending).b.freeze, logger:, transcript: }
+      raise TypeError, 'diagnostics must support call' if diagnostics && !diagnostics.respond_to?(:call)
+      raise TypeError, 'label must be a String' unless label.nil? || label.is_a?(String)
+      { diagnostics:, label: label && String.new(label).freeze, timeout:, write_timeout:, buffer_limit:, line_ending: String.new(line_ending).b.freeze, logger:, transcript: }
     end
     def manage(session)
       return session unless block_given?

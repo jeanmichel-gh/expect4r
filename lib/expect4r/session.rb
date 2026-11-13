@@ -5,15 +5,18 @@ require 'thread'
 module Expect4r
   class Session
     attr_reader :timeout, :write_timeout, :buffer_limit, :line_ending, :last_result,
-                :cleanup_errors, :command, :reader, :writer, :write_generation
-    attr_accessor :trace_bytes
+                :cleanup_errors, :command, :reader, :writer, :write_generation, :session_id, :buffer_offset
+    attr_accessor :trace_bytes, :diagnostic_wait_id
 
-    def initialize(backend, timeout:, write_timeout:, buffer_limit:, line_ending:, logger:, transcript:)
+    def initialize(backend, timeout:, write_timeout:, buffer_limit:, line_ending:, logger:, transcript:, diagnostics: nil, label: nil)
       @backend, @reader, @writer = backend, backend.to_io, backend.writer
       @timeout, @write_timeout, @buffer_limit = timeout, write_timeout, buffer_limit
       @line_ending, @logger, @transcript = line_ending, logger, transcript
       @buffer, @cleanup_errors = ''.b, []
       @write_generation = 0
+      @diagnostics, @label = diagnostics, label
+      @session_id = Diagnostics.next_id("s")
+      @diagnostic_sequence, @buffer_offset, @received_bytes = 0, 0, 0
       @command = backend.command
       @mutex, @owner, @context = Mutex.new, nil, nil
       @redactor = Redactor.new
@@ -30,7 +33,10 @@ module Expect4r
     def clear_buffer
       operation do
         previous = buffer
+        consume(@buffer.bytesize)
+        @buffer_offset = @received_bytes
         @buffer, @failed = ''.b, false
+        diagnostic(:buffer_clear, removed_bytes: previous.bytesize)
         previous
       end
     end
@@ -68,17 +74,18 @@ module Expect4r
         poll_once = timeout == 0 && (!budget || budget > now)
         while offset < bytes.bytesize
           remaining = deadline && deadline - Expect4r.monotonic
-          raise WriteTimeout.new('write deadline expired', bytes_written: offset) if remaining && remaining <= 0 && !poll_once
+          raise write_timeout_error(offset) if remaining && remaining <= 0 && !poll_once
           poll_once = false
           count = @writer.write_nonblock(bytes.byteslice(offset..), exception: false)
           if count == :wait_writable
             ready = IO.select(@eof ? [] : [@reader], [@writer], nil, remaining && [remaining, 0].max)
-            raise WriteTimeout.new('write deadline expired', bytes_written: offset) unless ready
+            raise write_timeout_error(offset) unless ready
             receive if ready.first.include?(@reader)
           else
             raise TransportError.new('writer made no progress', bytes_written: offset) unless count.positive?
             offset += count
             @write_generation += 1
+            diagnostic(:write_progress, bytes: count, confirmed_bytes: offset, requested_bytes: bytes.bytesize)
           end
         end
         trace(:write, "#{offset} bytes")
@@ -135,6 +142,7 @@ module Expect4r
         end
         if failure
           @cleanup_errors << failure unless @cleanup_errors.include?(failure)
+          diagnostic_during_failure(:cleanup_error, error_class: failure.class.name)
           raise failure
         end
         process_status
@@ -181,31 +189,56 @@ module Expect4r
     end
     def scan_buffer = @buffer
     def failed? = @failed
-    def consume(count) = @buffer.slice!(0, count)
+    def consume(count)
+      previous = @buffer_offset
+      removed = @buffer.slice!(0, count)
+      @buffer_offset += removed.bytesize
+      diagnostic(:consume, from_offset: previous, to_offset: @buffer_offset, bytes: removed.bytesize, buffered_bytes: @buffer.bytesize)
+      removed
+    end
+    def diagnostic(event, **fields)
+      return unless @diagnostics
+      @diagnostic_sequence += 1
+      @diagnostics.call(fields.merge(schema_version: 1, event:, session_id: @session_id,
+                                    label: @label, wait_id: @diagnostic_wait_id,
+                                    sequence: @diagnostic_sequence, monotonic: Expect4r.monotonic).freeze)
+    rescue StandardError
+      # A failed sink is disabled so error/cleanup reporting cannot mask it.
+      @diagnostics = nil
+      raise
+    end
     def record_result(result) = @last_result = result
     def receive
       data = @reader.read_nonblock(65_536, exception: false)
       return false if data == :wait_readable
       if data.nil?
         @eof = true
+        diagnostic(:eof, stream_offset: @received_bytes, buffered_bytes: @buffer.bytesize)
         finish_transcript
         return false
       end
       data = data.b
+      read_offset = @received_bytes
+      @received_bytes += data.bytesize
       if @buffer_limit && @buffer.bytesize + data.bytesize > @buffer_limit
         capacity = @buffer_limit - @buffer.bytesize
         @buffer << data.byteslice(0, capacity)
         @failed = true
+        error = BufferOverflow.new('unmatched buffer limit exceeded', buffer: buffer,
+                                   rejected: data.byteslice(capacity..).freeze)
+        diagnostic_during_failure(:receive, bytes: data.bytesize, stream_offset: read_offset, buffered_bytes: @buffer.bytesize)
+        diagnostic_during_failure(:overflow, limit: @buffer_limit, buffered_bytes: @buffer.bytesize, rejected_bytes: data.bytesize - capacity)
         deliver(@redactor.feed(data))
-        raise BufferOverflow.new('unmatched buffer limit exceeded', buffer: buffer,
-                                 rejected: data.byteslice(capacity..).freeze)
+        raise error
       end
       @buffer << data
+      diagnostic(:receive, bytes: data.bytesize, stream_offset: read_offset, buffered_bytes: @buffer.bytesize)
       deliver(@redactor.feed(data))
       true
     rescue Errno::EIO => error
       raise TransportError, 'non-terminal read failed' unless @reader.tty?
       @eof = true
+      diagnostic(:eof, stream_offset: @received_bytes, buffered_bytes: @buffer.bytesize)
       finish_transcript
       false
     rescue SystemCallError, IOError => error
@@ -216,6 +249,15 @@ module Expect4r
     end
 
     private
+    def diagnostic_during_failure(event, **fields)
+      diagnostic(event, **fields)
+    rescue StandardError => error
+      @cleanup_errors << error
+    end
+    def write_timeout_error(offset)
+      diagnostic(:write_timeout, confirmed_bytes: offset)
+      WriteTimeout.new('write deadline expired', bytes_written: offset)
+    end
     def operation(allow_callback: false)
       if allow_callback && @owner == Thread.current && @context&.in_action?
         return yield

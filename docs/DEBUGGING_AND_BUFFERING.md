@@ -1,8 +1,9 @@
 # Debugging, buffering and dialogue replay
 
-Status: proposed implementation plan, 2026-11-13. Baseline: commit `875ecd0`.
-Audience: expect4r maintainers and application authors. All new APIs below are
-proposals, not functionality available in the current gem.
+Status: P1 implemented locally on 2026-11-13; P2–P6 remain planned.
+Design baseline: commit `875ecd0`.
+Audience: expect4r maintainers and application authors. The P1 diagnostic callback described below is available in this checkout.
+Other new APIs below remain proposals.
 
 ## Goal and scope
 
@@ -15,7 +16,61 @@ Retain `interact` as a first-class operation: automated waits, manual control an
 return to automation must be diagnosable through the same session event stream.
 This plan does not replace Ruby's debugger or promise complete Tcl/Expect parity.
 
-## Current implementation
+## P1 usage and validation
+
+```ruby
+require 'expect4r'
+require 'json'
+
+# The callback receives frozen metadata Hashes; no protocol payload or pattern text.
+sink = ->(event) { $stderr.puts(JSON.generate(event)) }
+Expect4r.spawn('ssh', 'lab-router', diagnostics: sink, label: 'lab') do |session|
+  session.expect!(timeout: 10) do
+    on /[Pp]assword: ?\z/, name: :password do
+      send_line ENV.fetch('ROUTER_PASSWORD'), sensitive: true
+      exp_continue
+    end
+    on /router#\z/, name: :ready
+  end
+end
+```
+
+P1 emits `wait_start`, `rule_registered`, `rule_attempt`, `rule_error`, `match`,
+`consume`, `buffer_clear`, `receive`, `write_progress`, `write_timeout`,
+`deadlines`, `continuation`, `timeout`, `eof`, `overflow`, `wait_result`,
+`wait_error`, `registration_error`, `interaction_start`, `interaction_end`, and
+`cleanup_error`. Events include schema version 1, process-local session ID,
+optional label, per-session sequence and monotonic timestamp. Events within a wait
+share its process-local wait ID across sources. Constructor registration failures
+use `registration_wait_id` because ownership has not yet been acquired.
+
+Match offsets are zero-based byte ranges with exclusive end offsets. Consumption
+advances the buffer origin, including output consumed by `interact`. Clearing an
+overflowed buffer advances past the already-read rejected bytes as well. Receive
+events report the chunk size, its stream offset, and bytes retained at emission.
+Write progress is confirmed per partial write. Aggregate results identify the
+selected source. Trace payload excludes patterns, exception messages, raw buffers,
+captures and credentials; caller-supplied labels and rule names should be safe to
+export. Existing logger, transcript and byte-tracing APIs remain unchanged.
+
+Callbacks execute synchronously and must not read/mutate the session or block
+indefinitely. A failing sink is disabled and its exception propagates during
+ordinary operations; reporting an existing error preserves that primary error
+and stores secondary diagnostic failures in `cleanup_errors`. Diagnostic sink
+failure during receive retains the read bytes in the unmatched buffer.
+
+Native macOS ARM64, `rv` Ruby 4.0.9: 55 core tests/222 assertions, 27 router
+tests/254 assertions, and 20 legacy tests/68 assertions passed. Both gems built
+and passed isolated installation/dialogue checks. No Linux claim for P1 yet.
+A small local socket-pair check (median of three, 2,000 literal waits) measured
+0.0152 seconds disabled and 0.0231 seconds with a counting metadata callback.
+This illustrates event overhead; it is not a production throughput or memory
+benchmark and does not compare disabled tracing against the pre-P1 code.
+
+P1 deliberately does not expose payload previews, renderers, scoped debugging,
+recordings, recoverable full-buffer handling or replay. Those remain P2–P6.
+
+## Baseline before P1
 
 | Capability | Current behavior | Limitation |
 |---|---|---|
@@ -210,8 +265,8 @@ at once. Existing tests and behavior remain the regression baseline.
 | P6 | Replay transport and fixture tools | A captured synthetic failure reproduces offline; fragmented replay yields same match results; TX mismatch reports first differing offset; placeholder policy enforced |
 
 P1 precedes P2/P3; P4 depends on P1's buffer accounting; P5 depends on P4; P6
-requires the stable P3 recording format. Start implementation with **P1 only**,
-then evaluate event usefulness and overhead before freezing a public schema.
+requires the stable P3 recording format. P1 is implemented; next evaluate its events and build P2 before freezing the
+public schema.
 
 ## Verification plan
 
