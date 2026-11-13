@@ -78,7 +78,9 @@ or its vendor rules. See its README for examples and current limitations.
 Pass `diagnostics: ->(event) { ... }` and an optional `label:` to a session factory
 to observe matching, byte ranges, consumption, deadlines and manual handoffs.
 Callbacks receive frozen metadata Hashes without protocol bytes or pattern text.
-Tracing is disabled by default. See the [design and usage](docs/DEBUGGING_AND_BUFFERING.md)
+Tracing is disabled by default. Use `session.with_debug(output: $stderr) { ... }`
+for readable scoped diagnostics; add `bytes: true` for bounded, filtered previews
+or `format: :hex` for hex output. See the [design and usage](docs/DEBUGGING_AND_BUFFERING.md)
 for event semantics, sink failures and the remaining implementation phases.
 
 ## Existing scripts

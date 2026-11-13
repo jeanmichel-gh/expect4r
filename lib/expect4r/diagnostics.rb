@@ -55,3 +55,51 @@ module Expect4r
     end
   end
 end
+
+module Expect4r
+  module Diagnostics
+    # Human-readable sink. It never receives pattern text or unsanitized snapshots
+    # once the session has registered a secret.
+    class DebugOutput
+      def initialize(output:, level:, bytes:, format:, preview_limit:)
+        raise TypeError, 'output must support write' unless output.respond_to?(:write)
+        raise ArgumentError, 'level must be :events or :matching' unless [:events, :matching].include?(level)
+        raise ArgumentError, 'bytes must be boolean' unless [true, false].include?(bytes)
+        raise ArgumentError, 'format must be :escaped or :hex' unless [:escaped, :hex].include?(format)
+        raise ArgumentError, 'preview_limit must be a positive Integer' unless preview_limit.is_a?(Integer) && preview_limit.positive?
+        @output, @level, @bytes, @format, @limit = output, level, bytes, format, preview_limit
+        @failed = false
+      end
+      def previews? = @bytes && !@failed
+      def call(event)
+        return if @failed || (@level == :events && [:rule_registered, :rule_attempt].include?(event[:event]))
+        line = event.map { |key, value| "#{key}=#{value.inspect}" }.join(' ')
+        if @bytes && block_given?
+          snapshot = yield
+          if snapshot[:suppressed]
+            line << ' preview=[suppressed:registered_secret]'
+          else
+            data = snapshot.fetch(:data)
+            # A suffix makes trailing spaces, CR/LF and incomplete prompts visible.
+            tail = data.byteslice(-[data.bytesize, @limit].min, @limit) || ''.b
+            shown = @format == :hex ? tail.unpack1('H*').scan(/../).join(' ') : tail.b.dump
+            line << " preview=#{shown} omitted_bytes=#{[data.bytesize - tail.bytesize, 0].max}"
+          end
+        end
+        write_all(line + "\n")
+      rescue StandardError
+        @failed = true
+        raise
+      end
+      private
+      def write_all(bytes)
+        offset = 0
+        while offset < bytes.bytesize
+          count = @output.write(bytes.byteslice(offset..))
+          raise IOError, 'debug output made no progress' unless count.is_a?(Integer) && count.positive? && count <= bytes.bytesize - offset
+          offset += count
+        end
+      end
+    end
+  end
+end

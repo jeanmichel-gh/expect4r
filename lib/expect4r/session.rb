@@ -21,6 +21,8 @@ module Expect4r
       @mutex, @owner, @context = Mutex.new, nil, nil
       @redactor = Redactor.new
       @tx_redactor = Redactor.new
+      @debug_tx_redactor = Redactor.new
+      @diagnostic_has_secrets = false
       @trace_bytes, @eof, @closed, @failed = false, false, false, false
     end
     def pid = @backend.pid
@@ -40,8 +42,25 @@ module Expect4r
         previous
       end
     end
+    def with_debug(level: :matching, output: $stderr, bytes: false, format: :escaped, preview_limit: 256)
+      raise ArgumentError, 'with_debug requires a block' unless block_given?
+      sink = Diagnostics::DebugOutput.new(output:, level:, bytes:, format:, preview_limit:)
+      with_lease do
+        previous, @debug_output = @debug_output, sink
+        begin
+          yield self
+        ensure
+          @debug_output = previous
+        end
+      end
+    end
     def redact(*secrets)
-      secrets.each { |secret| @redactor.add(secret); @tx_redactor.add(secret) }
+      secrets.each do |secret|
+        @redactor.add(secret)
+        @tx_redactor.add(secret)
+        @debug_tx_redactor.add(secret)
+        @diagnostic_has_secrets = true
+      end
       self
     end
     def expect(*patterns, **options, &block)
@@ -83,9 +102,11 @@ module Expect4r
             receive if ready.first.include?(@reader)
           else
             raise TransportError.new('writer made no progress', bytes_written: offset) unless count.positive?
+            safe_bytes = @debug_tx_redactor.feed(bytes.byteslice(offset, count)) if @debug_output&.previews? || @diagnostic_has_secrets
             offset += count
             @write_generation += 1
             diagnostic(:write_progress, bytes: count, confirmed_bytes: offset, requested_bytes: bytes.bytesize)
+            debug_bytes(:tx, safe_bytes)
           end
         end
         trace(:write, "#{offset} bytes")
@@ -196,16 +217,22 @@ module Expect4r
       diagnostic(:consume, from_offset: previous, to_offset: @buffer_offset, bytes: removed.bytesize, buffered_bytes: @buffer.bytesize)
       removed
     end
-    def diagnostic(event, **fields)
-      return unless @diagnostics
+    def diagnostic(event, **fields, &preview)
+      return unless @diagnostics || @debug_output
       @diagnostic_sequence += 1
-      @diagnostics.call(fields.merge(schema_version: 1, event:, session_id: @session_id,
+      record = fields.merge(schema_version: 1, event:, session_id: @session_id,
                                     label: @label, wait_id: @diagnostic_wait_id,
-                                    sequence: @diagnostic_sequence, monotonic: Expect4r.monotonic).freeze)
-    rescue StandardError
-      # A failed sink is disabled so error/cleanup reporting cannot mask it.
-      @diagnostics = nil
-      raise
+                                    sequence: @diagnostic_sequence, monotonic: Expect4r.monotonic).freeze
+      begin
+        @diagnostics&.call(record)
+      rescue StandardError
+        @diagnostics = nil
+        raise
+      end
+      @debug_output&.call(record, &preview)
+    end
+    def diagnostic_snapshot
+      @diagnostic_has_secrets ? { suppressed: true } : { data: @buffer }
     end
     def record_result(result) = @last_result = result
     def receive
@@ -272,8 +299,13 @@ module Expect4r
     def trace(event, message)
       @logger&.info({ event:, message: }.freeze)
     end
+    def debug_bytes(direction, bytes)
+      return unless @debug_output&.previews? && bytes && !bytes.empty?
+      diagnostic(:byte_preview, direction:, sanitized_bytes: bytes.bytesize) { { data: bytes } }
+    end
     def deliver(bytes)
       return if bytes.empty?
+      debug_bytes(:rx, bytes)
       write_sink(@transcript, bytes) if @transcript
       @logger&.debug({ event: :receive, message: bytes }.freeze) if @trace_bytes
     end

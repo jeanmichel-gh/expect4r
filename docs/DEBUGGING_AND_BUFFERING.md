@@ -1,8 +1,8 @@
 # Debugging, buffering and dialogue replay
 
-Status: P1 implemented locally on 2026-11-13; P2–P6 remain planned.
+Status: P1 and P2 implemented locally on 2026-11-13; P3–P6 remain planned.
 Design baseline: commit `875ecd0`.
-Audience: expect4r maintainers and application authors. The P1 diagnostic callback described below is available in this checkout.
+Audience: expect4r maintainers and application authors. The P1 diagnostic callback and P2 scoped debugging are available in this checkout.
 Other new APIs below remain proposals.
 
 ## Goal and scope
@@ -67,8 +67,74 @@ A small local socket-pair check (median of three, 2,000 literal waits) measured
 This illustrates event overhead; it is not a production throughput or memory
 benchmark and does not compare disabled tracing against the pre-P1 code.
 
-P1 deliberately does not expose payload previews, renderers, scoped debugging,
-recordings, recoverable full-buffer handling or replay. Those remain P2–P6.
+P1 deliberately shipped metadata only. P2 adds the scoped formatter below;
+recordings, recoverable full-buffer handling and replay remain P3–P6.
+
+## P2 scoped debugging
+
+```ruby
+session.with_debug(output: $stderr, level: :matching) do
+  session.expect!(/ready>\z/)
+end
+
+# Explicitly request bounded, escaped byte previews.
+session.with_debug(output: $stderr, bytes: true, preview_limit: 128) do
+  session.expect!(/ready>\z/, timeout: 5)
+end
+
+# Hex previews for binary protocols.
+File.open('debug.log', 'w') do |file|
+  session.with_debug(output: file, bytes: true, format: :hex) do
+    session.expect!("\x00\xff".b)
+  end
+end
+```
+
+The caller owns output handles and must close them; a block-owned File can also
+wrap `with_debug`. The scope returns the block's value. Normal exit, exceptions
+and nonlocal return restore the previous debug sink; nested scopes temporarily
+replace the outer formatter. Other threads cannot use the session while the scope
+holds its lease. A scope is entered around operations, not from a running wait's
+action. Existing `logger:`, `trace_bytes` and metadata callbacks are independent.
+
+Options:
+
+| Option | Values and behavior |
+|---|---|
+| `level:` | `:matching` (default) includes rule registration/attempts; `:events` omits those two noisy event types |
+| `output:` | Writable sink, default `$stderr`; partial writes are handled |
+| `bytes:` | `false` by default; `true` enables byte previews |
+| `format:` | `:escaped` (default, Ruby byte-string escapes) or `:hex` |
+| `preview_limit:` | Positive byte count, default 256; displays the tail and reports omitted bytes |
+
+The formatter preserves P1 session/wait IDs, sequence numbers, labels and monotonic
+timestamps. Metadata callbacks continue to receive metadata only, even when byte
+previews are enabled. Snapshot blocks are not evaluated when previews are off.
+Pattern text, captured values and exception messages are not printed.
+
+RX/TX `byte_preview` events use continuously maintained streaming redaction before
+formatting or truncation. Incoming chunks and confirmed outgoing partial writes
+are filtered independently. A secret prefix can remain withheld until subsequent
+bytes disambiguate it; this is a diagnostic view, not an exact wire recording.
+Redaction state remains continuous across nested scopes and periods without debug
+output, for sessions with registered secrets. As before, secrets must be registered
+before receipt/transmission, either through `redact` or sensitive sends.
+
+Rule-attempt and timeout snapshots are conservatively suppressed once any secret
+has been registered. Re-reading a consumed buffer cannot safely establish whether
+its leading bytes are the middle of a secret. Sanitized RX/TX previews remain
+available. This policy prevents fragments leaking through snapshots; richer
+snapshot redaction is deferred to P3. Raw results and manual terminal display are
+unchanged. User labels and rule names must be appropriate for export.
+
+A failed formatter disables itself and propagates the sink error during normal
+operations; primary errors retain precedence during error/cleanup reporting.
+The previous scoped formatter is restored on exit. P2 passed 66 core tests/275
+assertions, 27 router tests/254 assertions, and 20 legacy tests/68 assertions on
+native macOS with rv Ruby 4.0.9; both built gems passed isolated installation checks.
+No automatic file rotation,
+recording, live-display toggle or replay is added in P2.
+
 
 ## Baseline before P1
 
@@ -265,8 +331,8 @@ at once. Existing tests and behavior remain the regression baseline.
 | P6 | Replay transport and fixture tools | A captured synthetic failure reproduces offline; fragmented replay yields same match results; TX mismatch reports first differing offset; placeholder policy enforced |
 
 P1 precedes P2/P3; P4 depends on P1's buffer accounting; P5 depends on P4; P6
-requires the stable P3 recording format. P1 is implemented; next evaluate its events and build P2 before freezing the
-public schema.
+requires the stable P3 recording format. P1 and P2 are implemented. Next is P3: versioned recordings and bounded history;
+keep evaluating events before freezing the public schema.
 
 ## Verification plan
 

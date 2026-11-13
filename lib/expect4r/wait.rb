@@ -175,7 +175,7 @@ module Expect4r
             raise
           end
           source.diagnostic(:rule_attempt, pattern_index: index, rule_name: rule.name,
-                            matched: !found.nil?, buffer_offset: source.buffer_offset, buffered_bytes: buf.bytesize)
+                            matched: !found.nil?, buffer_offset: source.buffer_offset, buffered_bytes: buf.bytesize) { source.diagnostic_snapshot }
           next unless found
           offset, length, captures = found
           source.diagnostic(:match, pattern_index: index, rule_name: rule.name,
@@ -237,7 +237,9 @@ module Expect4r
                           elapsed: Expect4r.monotonic - @started), nil]
     end
     def timeout_result(reason)
-      emit(:timeout, reason:, elapsed: Expect4r.monotonic - @started)
+      @sessions.each do |source|
+        source.diagnostic(:timeout, reason:, elapsed: Expect4r.monotonic - @started) { source.diagnostic_snapshot }
+      end
       source = @sessions.one? ? @sessions.first : nil
       result = Result.new(status: :timeout, session: source, before: source ? source.buffer : ''.b,
                           reason:, elapsed: Expect4r.monotonic - @started,
