@@ -8,7 +8,7 @@ module Expect4r
                 :cleanup_errors, :command, :reader, :writer, :write_generation, :session_id, :buffer_offset
     attr_accessor :trace_bytes, :diagnostic_wait_id
 
-    def initialize(backend, timeout:, write_timeout:, buffer_limit:, line_ending:, logger:, transcript:, diagnostics: nil, label: nil)
+    def initialize(backend, timeout:, write_timeout:, buffer_limit:, line_ending:, logger:, transcript:, diagnostics: nil, label: nil, recording: nil, history: nil)
       @backend, @reader, @writer = backend, backend.to_io, backend.writer
       @timeout, @write_timeout, @buffer_limit = timeout, write_timeout, buffer_limit
       @line_ending, @logger, @transcript = line_ending, logger, transcript
@@ -16,6 +16,8 @@ module Expect4r
       @write_generation = 0
       @diagnostics, @label = diagnostics, label
       @session_id = Diagnostics.next_id("s")
+      @recording = recording && Diagnostics::Recording.new(recording, session_id: @session_id, label:, transport: backend.command ? :pty : :io)
+      @history = history && Diagnostics::History.new(**history)
       @diagnostic_sequence, @buffer_offset, @received_bytes = 0, 0, 0
       @command = backend.command
       @mutex, @owner, @context = Mutex.new, nil, nil
@@ -30,6 +32,10 @@ module Expect4r
     def eof? = @eof
     def alive? = @backend.alive?
     def process_status = @backend.process_status
+    def diagnostic_history = @history ? @history.snapshot : [].freeze
+    def diagnostic_history_dropped = @history ? @history.dropped_events : 0
+    def diagnostic_history_bytes = @history ? @history.retained_bytes : 0
+    def recording_failed? = !!@recording&.failed
     def buffer = @buffer.dup.freeze
     def inspect = "#<Expect4r::Session pid=#{pid.inspect} closed=#{closed?} eof=#{eof?}>"
     def clear_buffer
@@ -59,6 +65,7 @@ module Expect4r
         @redactor.add(secret)
         @tx_redactor.add(secret)
         @debug_tx_redactor.add(secret)
+        @recording&.redact(secret)
         @diagnostic_has_secrets = true
       end
       self
@@ -90,6 +97,7 @@ module Expect4r
         budget = @context&.write_deadline
         deadline = [deadline, budget].compact.min
         offset = 0
+        diagnostic(:write_start, requested_bytes: bytes.bytesize)
         poll_once = timeout == 0 && (!budget || budget > now)
         while offset < bytes.bytesize
           remaining = deadline && deadline - Expect4r.monotonic
@@ -102,17 +110,20 @@ module Expect4r
             receive if ready.first.include?(@reader)
           else
             raise TransportError.new('writer made no progress', bytes_written: offset) unless count.positive?
+            safe_log = @tx_redactor.feed(bytes.byteslice(offset, count)) if @trace_bytes || @diagnostic_has_secrets
             safe_bytes = @debug_tx_redactor.feed(bytes.byteslice(offset, count)) if @debug_output&.previews? || @diagnostic_has_secrets
             offset += count
             @write_generation += 1
+            @recording&.io(:tx, bytes.byteslice(offset - count, count))
             diagnostic(:write_progress, bytes: count, confirmed_bytes: offset, requested_bytes: bytes.bytesize)
             debug_bytes(:tx, safe_bytes)
+            @logger&.debug({ event: :sending, message: safe_log }.freeze) if @trace_bytes && safe_log && !safe_log.empty?
           end
         end
         trace(:write, "#{offset} bytes")
-        @logger&.debug({ event: :sending, message: @tx_redactor.feed(bytes, final: true) }.freeze) if @trace_bytes
         offset
       rescue SystemCallError, IOError => error
+        diagnostic_during_failure(:write_error, error_class: error.class.name, confirmed_bytes: offset || 0)
         raise TransportError.new('write failed', bytes_written: offset || 0), cause: error
       end
     end
@@ -140,6 +151,8 @@ module Expect4r
         failure = nil
         begin
           finish_transcript
+          safe_log = @tx_redactor.feed(''.b, final: true)
+          @logger&.debug({ event: :sending, message: safe_log }.freeze) if @trace_bytes && !safe_log.empty?
         rescue StandardError => error
           failure = error
         ensure
@@ -160,6 +173,12 @@ module Expect4r
             @cleanup_errors << error
             failure ||= error
           end
+        end
+        begin
+          @recording&.finish(complete: failure.nil?)
+        rescue StandardError => error
+          @cleanup_errors << error
+          failure ||= error
         end
         if failure
           @cleanup_errors << failure unless @cleanup_errors.include?(failure)
@@ -218,11 +237,13 @@ module Expect4r
       removed
     end
     def diagnostic(event, **fields, &preview)
-      return unless @diagnostics || @debug_output
+      return unless @diagnostics || @debug_output || @history || @recording
       @diagnostic_sequence += 1
       record = fields.merge(schema_version: 1, event:, session_id: @session_id,
                                     label: @label, wait_id: @diagnostic_wait_id,
                                     sequence: @diagnostic_sequence, monotonic: Expect4r.monotonic).freeze
+      @history&.add(record)
+      @recording&.event(record)
       begin
         @diagnostics&.call(record)
       rescue StandardError
@@ -253,12 +274,18 @@ module Expect4r
         @failed = true
         error = BufferOverflow.new('unmatched buffer limit exceeded', buffer: buffer,
                                    rejected: data.byteslice(capacity..).freeze)
+        begin
+          @recording&.io(:rx, data)
+        rescue StandardError => recording_error
+          @cleanup_errors << recording_error
+        end
         diagnostic_during_failure(:receive, bytes: data.bytesize, stream_offset: read_offset, buffered_bytes: @buffer.bytesize)
         diagnostic_during_failure(:overflow, limit: @buffer_limit, buffered_bytes: @buffer.bytesize, rejected_bytes: data.bytesize - capacity)
         deliver(@redactor.feed(data))
         raise error
       end
       @buffer << data
+      @recording&.io(:rx, data)
       diagnostic(:receive, bytes: data.bytesize, stream_offset: read_offset, buffered_bytes: @buffer.bytesize)
       deliver(@redactor.feed(data))
       true
@@ -269,6 +296,7 @@ module Expect4r
       finish_transcript
       false
     rescue SystemCallError, IOError => error
+      diagnostic_during_failure(:read_error, error_class: error.class.name)
       raise TransportError, 'read failed', cause: error
     end
     def check_open!
@@ -282,7 +310,7 @@ module Expect4r
       @cleanup_errors << error
     end
     def write_timeout_error(offset)
-      diagnostic(:write_timeout, confirmed_bytes: offset)
+      diagnostic_during_failure(:write_timeout, confirmed_bytes: offset)
       WriteTimeout.new('write deadline expired', bytes_written: offset)
     end
     def operation(allow_callback: false)

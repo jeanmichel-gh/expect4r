@@ -1,8 +1,8 @@
 # Debugging, buffering and dialogue replay
 
-Status: P1 and P2 implemented locally on 2026-11-13; P3–P6 remain planned.
+Status: P1–P3 implemented locally on 2026-11-13; P4–P6 remain planned.
 Design baseline: commit `875ecd0`.
-Audience: expect4r maintainers and application authors. The P1 diagnostic callback and P2 scoped debugging are available in this checkout.
+Audience: expect4r maintainers and application authors. P1 diagnostic events, P2 scoped debugging, and P3 recording/history are available in this checkout.
 Other new APIs below remain proposals.
 
 ## Goal and scope
@@ -68,7 +68,7 @@ This illustrates event overhead; it is not a production throughput or memory
 benchmark and does not compare disabled tracing against the pre-P1 code.
 
 P1 deliberately shipped metadata only. P2 adds the scoped formatter below;
-recordings, recoverable full-buffer handling and replay remain P3–P6.
+P3 now adds recording/history; recoverable full-buffer handling and replay remain planned.
 
 ## P2 scoped debugging
 
@@ -135,6 +135,14 @@ native macOS with rv Ruby 4.0.9; both built gems passed isolated installation ch
 No automatic file rotation,
 recording, live-display toggle or replay is added in P2.
 
+
+## P3 recording and history
+
+See [the usage guide and version 1 format](RECORDING_FORMAT.md) for `recording:`,
+`history:`, binary payloads, original IO timestamps/ranges, length-preserving secret
+masks, bounded history, completion semantics and sink-failure behavior. Redacted
+recordings require explicit substitutions in future replay; replay is still P6.
+P3 also corrects outgoing Logger redaction across separate write calls.
 
 ## Baseline before P1
 
@@ -331,7 +339,7 @@ at once. Existing tests and behavior remain the regression baseline.
 | P6 | Replay transport and fixture tools | A captured synthetic failure reproduces offline; fragmented replay yields same match results; TX mismatch reports first differing offset; placeholder policy enforced |
 
 P1 precedes P2/P3; P4 depends on P1's buffer accounting; P5 depends on P4; P6
-requires the stable P3 recording format. P1 and P2 are implemented. Next is P3: versioned recordings and bounded history;
+requires the stable P3 recording format. P1–P3 are implemented. P3 recording/history is implemented; next is P4 recoverable full-buffer handling;
 keep evaluating events before freezing the public schema.
 
 ## Verification plan

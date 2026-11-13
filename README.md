@@ -83,6 +83,11 @@ for readable scoped diagnostics; add `bytes: true` for bounded, filtered preview
 or `format: :hex` for hex output. See the [design and usage](docs/DEBUGGING_AND_BUFFERING.md)
 for event semantics, sink failures and the remaining implementation phases.
 
+Use `recording: file` for versioned RX/TX JSONL recordings, and
+`history: { max_events: 100, max_bytes: 65_536 }` for bounded metadata history.
+See [recording and history](docs/RECORDING_FORMAT.md) for usage, secret masking,
+completion and failure semantics. Replay remains planned.
+
 ## Existing scripts
 
 V2 is a major API change. The historical implementation lives under `legacy/`

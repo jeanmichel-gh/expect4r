@@ -4,6 +4,7 @@ require_relative 'expect4r/errors'
 require_relative 'expect4r/result'
 require_relative 'expect4r/patterns'
 require_relative 'expect4r/diagnostics'
+require_relative 'expect4r/recording'
 require 'fcntl'
 require_relative 'expect4r/session'
 require_relative 'expect4r/wait'
@@ -48,7 +49,7 @@ module Expect4r
     end
     private
     def settings_for(timeout: 10, write_timeout: 10, buffer_limit: 1_048_576,
-                     line_ending: "\r", logger: nil, transcript: nil, diagnostics: nil, label: nil)
+                     line_ending: "\r", logger: nil, transcript: nil, diagnostics: nil, label: nil, recording: nil, history: nil)
       timeout, write_timeout = duration(timeout), duration(write_timeout)
       unless buffer_limit.nil? || (buffer_limit.is_a?(Integer) && buffer_limit.positive?)
         raise ArgumentError, 'buffer_limit must be a positive Integer or nil'
@@ -58,7 +59,11 @@ module Expect4r
       raise TypeError, 'transcript must support write' if transcript && !transcript.respond_to?(:write)
       raise TypeError, 'diagnostics must support call' if diagnostics && !diagnostics.respond_to?(:call)
       raise TypeError, 'label must be a String' unless label.nil? || label.is_a?(String)
-      { diagnostics:, label: label && String.new(label).freeze, timeout:, write_timeout:, buffer_limit:, line_ending: String.new(line_ending).b.freeze, logger:, transcript: }
+      raise TypeError, 'recording must support write' if recording && !recording.respond_to?(:write)
+      unless history.nil? || (history.is_a?(Hash) && history.keys.sort == [:max_bytes, :max_events] && history.values.all? { |v| v.is_a?(Integer) && v.positive? })
+        raise ArgumentError, 'history requires positive max_events and max_bytes'
+      end
+      { recording:, history: history&.dup&.freeze, diagnostics:, label: label && String.new(label).freeze, timeout:, write_timeout:, buffer_limit:, line_ending: String.new(line_ending).b.freeze, logger:, transcript: }
     end
     def manage(session)
       return session unless block_given?
