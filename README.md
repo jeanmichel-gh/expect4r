@@ -88,6 +88,11 @@ Use `recording: file` for versioned RX/TX JSONL recordings, and
 See [recording and history](docs/RECORDING_FORMAT.md) for usage, secret masking,
 completion and failure semantics. Replay remains planned.
 
+Opt into buffer recovery with a `full_buffer` action. It can explicitly consume
+prefixes or grow capacity under a configured ceiling while preserving unread data.
+See [buffer recovery](docs/BUFFER_RECOVERY.md) for examples, staging and deadlines.
+Without a handler, overflow still raises.
+
 ## Existing scripts
 
 V2 is a major API change. The historical implementation lives under `legacy/`

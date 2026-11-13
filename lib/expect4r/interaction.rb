@@ -9,6 +9,7 @@ module Expect4r
       raise ArgumentError, 'raw must be boolean' unless raw == true || raw == false
       escape = escape.b
       operation do
+        previous_recovery = @buffer_recovery
         saved_mode = input.console_mode if raw && input.tty?
         started = Expect4r.monotonic
         deadline = timeout && started + timeout
@@ -16,6 +17,7 @@ module Expect4r
         failed = false
         interaction_reason = :error
         begin
+          @buffer_recovery = true
           diagnostic(:interaction_start, raw:, timeout:)
           input.raw! if saved_mode
           if saved_mode && @reader.tty?
@@ -33,6 +35,11 @@ module Expect4r
               interaction_write(pending, timeout: 0) unless pending.empty?
               interaction_reason = :timeout
               return InteractionResult.new(reason: :timeout, session: self, elapsed: Expect4r.monotonic - started, pending_input: ''.b.freeze)
+            end
+            if drain_staged
+              output_all(output, @buffer)
+              consume(@buffer.bytesize)
+              next
             end
             ready = IO.select([input, @reader], nil, nil, left)&.first || []
             if ready.include?(@reader)
@@ -64,6 +71,7 @@ module Expect4r
           failed = true
           raise
         ensure
+          @buffer_recovery = previous_recovery
           begin
             input.console_mode = saved_mode if saved_mode
           rescue StandardError => error

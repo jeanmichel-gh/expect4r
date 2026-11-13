@@ -9,7 +9,7 @@ module Expect4r
       super(message || self.class.name.split('::').last)
     end
   end
-  %i[SpawnError TransportError WriteTimeout BufferOverflow EncodingError ExpectTimeout
+  %i[SpawnError TransportError WriteTimeout BufferOverflow BufferProgressError EncodingError ExpectTimeout
      UnexpectedEOF BusySessionError ReentrancyError InvalidContinuation EmptyMatchError
      ResponseLimitError CleanupError UnsupportedOperation].each do |name|
     const_set(name, Class.new(Error))

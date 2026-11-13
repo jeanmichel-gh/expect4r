@@ -5,14 +5,16 @@ require 'thread'
 module Expect4r
   class Session
     attr_reader :timeout, :write_timeout, :buffer_limit, :line_ending, :last_result,
-                :cleanup_errors, :command, :reader, :writer, :write_generation, :session_id, :buffer_offset
-    attr_accessor :trace_bytes, :diagnostic_wait_id
+                :cleanup_errors, :command, :reader, :writer, :write_generation, :session_id, :buffer_offset, :buffer_ceiling, :last_receive_fresh
+    attr_accessor :trace_bytes, :diagnostic_wait_id, :buffer_recovery
 
-    def initialize(backend, timeout:, write_timeout:, buffer_limit:, line_ending:, logger:, transcript:, diagnostics: nil, label: nil, recording: nil, history: nil)
+    def initialize(backend, timeout:, write_timeout:, buffer_limit:, line_ending:, logger:, transcript:, diagnostics: nil, label: nil, recording: nil, history: nil, buffer_ceiling: nil)
       @backend, @reader, @writer = backend, backend.to_io, backend.writer
       @timeout, @write_timeout, @buffer_limit = timeout, write_timeout, buffer_limit
       @line_ending, @logger, @transcript = line_ending, logger, transcript
       @buffer, @cleanup_errors = ''.b, []
+      @staged, @buffer_ceiling = ''.b, buffer_ceiling
+      @buffer_recovery, @last_receive_fresh = false, false
       @write_generation = 0
       @diagnostics, @label = diagnostics, label
       @session_id = Diagnostics.next_id("s")
@@ -38,12 +40,49 @@ module Expect4r
     def recording_failed? = !!@recording&.failed
     def buffer = @buffer.dup.freeze
     def inspect = "#<Expect4r::Session pid=#{pid.inspect} closed=#{closed?} eof=#{eof?}>"
+    def staged_buffer = @staged.dup.freeze
+    def staged_overflow!
+      @failed = true
+      raise BufferOverflow.new('staged input exceeds matching capacity', buffer: buffer, rejected: staged_buffer)
+    end
+    def staged_bytes = @staged.bytesize
+    def buffer_full? = @buffer_limit && @buffer.bytesize >= @buffer_limit
+    def consume_buffer(count)
+      unless count.is_a?(Integer) && count.positive?
+        raise ArgumentError, 'count must be a positive Integer'
+      end
+      operation(allow_callback: true) do
+        raise ArgumentError, 'count exceeds matching buffer' if count > @buffer.bytesize
+        consume(count).freeze
+      end
+    end
+    def resize_buffer(limit)
+      unless limit.nil? || (limit.is_a?(Integer) && limit.positive?)
+        raise ArgumentError, 'buffer limit must be a positive Integer or nil'
+      end
+      operation(allow_callback: true) do
+        raise ArgumentError, 'buffer limit exceeds ceiling' if @buffer_ceiling && (limit.nil? || limit > @buffer_ceiling)
+        raise ArgumentError, 'buffer limit is below retained bytes' if limit && limit < @buffer.bytesize
+        previous, @buffer_limit = @buffer_limit, limit
+        diagnostic(:buffer_resize, previous_limit: previous, limit:)
+        self
+      end
+    end
+    def drain_staged
+      return false if @staged.empty?
+      count = @buffer_limit ? [@buffer_limit - @buffer.bytesize, @staged.bytesize].min : @staged.bytesize
+      return false unless count.positive?
+      @buffer << @staged.byteslice(0, count)
+      @staged = @staged.byteslice(count..)
+      diagnostic(:stage_drain, bytes: count, buffered_bytes: @buffer.bytesize, staged_bytes: @staged.bytesize)
+      true
+    end
     def clear_buffer
       operation do
-        previous = buffer
+        previous = (@buffer + @staged).freeze
         consume(@buffer.bytesize)
         @buffer_offset = @received_bytes
-        @buffer, @failed = ''.b, false
+        @buffer, @staged, @failed = ''.b, ''.b, false
         diagnostic(:buffer_clear, removed_bytes: previous.bytesize)
         previous
       end
@@ -257,6 +296,8 @@ module Expect4r
     end
     def record_result(result) = @last_result = result
     def receive
+      @last_receive_fresh = false
+      return drain_staged unless @staged.empty?
       data = @reader.read_nonblock(65_536, exception: false)
       return false if data == :wait_readable
       if data.nil?
@@ -268,6 +309,17 @@ module Expect4r
       data = data.b
       read_offset = @received_bytes
       @received_bytes += data.bytesize
+      @last_receive_fresh = true
+      @context.received! if @context.respond_to?(:received!)
+      if @buffer_recovery
+        @staged = data
+        safe = @redactor.feed(data)
+        @recording&.io(:rx, data)
+        drain_staged
+        diagnostic(:receive, bytes: data.bytesize, stream_offset: read_offset, buffered_bytes: @buffer.bytesize, staged_bytes: @staged.bytesize)
+        deliver(safe)
+        return true
+      end
       if @buffer_limit && @buffer.bytesize + data.bytesize > @buffer_limit
         capacity = @buffer_limit - @buffer.bytesize
         @buffer << data.byteslice(0, capacity)

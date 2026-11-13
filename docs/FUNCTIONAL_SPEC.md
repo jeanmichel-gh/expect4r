@@ -476,3 +476,13 @@ The following are concrete proposals, ready to change if usage shows a better ch
 - One general-purpose core is used by login, commands, paging and adapters.
 
 Sources: [initial assessment](../ASSESSMENT.md), [Tcl/Expect reference](https://core.tcl-lang.org/expect/doc/trunk/expect.man), [expect-pty source](https://github.com/gatework/expect-ruby), [backend API](https://github.com/gatework/expect-ruby/blob/8303e641d247fffeed693b15fb9dee45a69d262d/docs/API.md), [backend compatibility boundaries](https://github.com/gatework/expect-ruby/blob/8303e641d247fffeed693b15fb9dee45a69d262d/docs/COMPATIBILITY.md), [published 0.10.1 requirements](https://rubygems.org/api/v2/rubygems/expect-pty/versions/0.10.1.json).
+
+## Implemented extensions: diagnostics and buffer recovery
+
+The original API tables above are extended by [scoped diagnostics and the phased
+design](DEBUGGING_AND_BUFFERING.md), [recording/history](RECORDING_FORMAT.md), and
+[P4 buffer recovery](BUFFER_RECOVERY.md). The recovery extension adds the
+`full_buffer` action, `:full_buffer` result status, `Result#staged`, `consume_buffer`,
+`resize_buffer`, `buffer_ceiling`, and staged-byte inspection. Default overflow
+behavior is unchanged; incremental staging is opt-in through a recovery handler
+and is also used while forwarding manual interaction.

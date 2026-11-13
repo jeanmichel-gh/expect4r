@@ -20,6 +20,10 @@ module Expect4r
       self
     end
     def timeout(&action) = event(:timeout, nil, action)
+    def full_buffer(from: nil, &action)
+      raise ArgumentError, 'full_buffer requires an action' unless action
+      event(:full_buffer, from, action)
+    end
     def eof(from: nil, &action) = event(:eof, from, action)
     def use(rules)
       raise TypeError, 'expected a RuleSet' unless rules.is_a?(RuleSet)

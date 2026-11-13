@@ -49,10 +49,13 @@ module Expect4r
     end
     private
     def settings_for(timeout: 10, write_timeout: 10, buffer_limit: 1_048_576,
-                     line_ending: "\r", logger: nil, transcript: nil, diagnostics: nil, label: nil, recording: nil, history: nil)
+                     line_ending: "\r", logger: nil, transcript: nil, diagnostics: nil, label: nil, recording: nil, history: nil, buffer_ceiling: nil)
       timeout, write_timeout = duration(timeout), duration(write_timeout)
       unless buffer_limit.nil? || (buffer_limit.is_a?(Integer) && buffer_limit.positive?)
         raise ArgumentError, 'buffer_limit must be a positive Integer or nil'
+      end
+      unless buffer_ceiling.nil? || (buffer_ceiling.is_a?(Integer) && buffer_ceiling.positive? && buffer_limit && buffer_limit <= buffer_ceiling)
+        raise ArgumentError, 'buffer_ceiling must be positive and cover the finite initial buffer_limit'
       end
       raise TypeError, 'line_ending must be a String' unless line_ending.is_a?(String)
       raise TypeError, 'logger must support info and debug' if logger && !(logger.respond_to?(:info) && logger.respond_to?(:debug))
@@ -63,7 +66,7 @@ module Expect4r
       unless history.nil? || (history.is_a?(Hash) && history.keys.sort == [:max_bytes, :max_events] && history.values.all? { |v| v.is_a?(Integer) && v.positive? })
         raise ArgumentError, 'history requires positive max_events and max_bytes'
       end
-      { recording:, history: history&.dup&.freeze, diagnostics:, label: label && String.new(label).freeze, timeout:, write_timeout:, buffer_limit:, line_ending: String.new(line_ending).b.freeze, logger:, transcript: }
+      { buffer_ceiling:, recording:, history: history&.dup&.freeze, diagnostics:, label: label && String.new(label).freeze, timeout:, write_timeout:, buffer_limit:, line_ending: String.new(line_ending).b.freeze, logger:, transcript: }
     end
     def manage(session)
       return session unless block_given?

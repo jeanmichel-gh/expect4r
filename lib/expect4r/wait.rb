@@ -23,6 +23,9 @@ module Expect4r
         end
         block.parameters.empty? ? @patterns.instance_exec(&block) : block.call(@patterns) if block
         raise ArgumentError, 'expect requires at least one pattern or event' if @patterns.rules.empty? && @patterns.events.empty?
+        if !@consume && @patterns.events.keys.any? { |type, source| type == :full_buffer }
+          raise ArgumentError, 'full_buffer handlers require consuming waits'
+        end
         @patterns.compile!
       rescue StandardError => error
         @sessions.each do |source|
@@ -37,9 +40,15 @@ module Expect4r
       @tag = Object.new
     end
     def run(bang: false)
-      acquired = []
+      acquired, recovery = [], {}
       begin
-        @sessions.each { |s| s.acquire!; acquired << s; s.diagnostic_wait_id = @wait_id }
+        @sessions.each do |source|
+          source.acquire!
+          acquired << source
+          recovery[source] = source.buffer_recovery
+          source.buffer_recovery = !!full_buffer_handler(source)
+          source.diagnostic_wait_id = @wait_id
+        end
         emit(:wait_start, rule_count: @patterns.rules.size, consume: @consume, timeout: @timeout, idle_timeout: @idle, total_timeout: @total)
         @patterns.rules.each_with_index do |rule, index|
           @sessions.each do |source|
@@ -61,9 +70,12 @@ module Expect4r
                       else
                         text_match || eof_result
                       end
-          candidate ||= timeout_result(expiration) if expiration && (polled || @timeout != 0)
+          candidate ||= timeout_result(expiration) if expiration && (polled || @timeout != 0 || expiration != :timeout)
+          candidate ||= full_buffer_result
           if candidate
             action, result, rule = candidate
+            full_origin = result.session.buffer_offset if result.full_buffer?
+            full_limit = result.session.buffer_limit if result.full_buffer?
             acknowledge = result.matched? || @patterns.events.key?([result.status, result.session]) || @patterns.events.key?([result.status, nil])
             if rule
               key = [rule, result.session]
@@ -85,6 +97,13 @@ module Expect4r
             ensure
               @in_action = false
             end
+            if result.full_buffer?
+              source = result.session
+              grew = source.buffer_limit.nil? || source.buffer_limit > full_limit
+              unless source.buffer_offset > full_origin || grew
+                raise BufferProgressError.new('full_buffer action must consume bytes or increase capacity', result:)
+              end
+            end
             if outcome.first == :continue
               emit(:continuation, reset_timeout: outcome.last)
               reset_relative if outcome.last
@@ -99,13 +118,18 @@ module Expect4r
             emit(:wait_result, status: result.status, reason: result.reason, selected_session_id: result.session&.session_id)
             return result
           end
+          drained = false
+          @sessions.each { |source| drained = source.drain_staged || drained }
+          if drained
+            continued = true
+            next
+          end
           active = @sessions.reject(&:eof?)
           ready = select_readers(active, remaining(now))
           polled = true
           ready.each do |source|
-            if source.receive && @idle
-              @idle_deadline = Expect4r.monotonic + @idle
-              trace_deadlines(:receive)
+            if source.receive && source.last_receive_fresh
+              received!
             end
           end
           continued = false
@@ -121,10 +145,16 @@ module Expect4r
         raise
       ensure
         acquired.each do |source|
+          source.buffer_recovery = recovery[source]
           source.diagnostic_wait_id = nil
           source.release!
         end
       end
+    end
+    def received!
+      return unless @idle
+      @idle_deadline = Expect4r.monotonic + @idle
+      trace_deadlines(:receive)
     end
     def in_action? = @in_action
     def write_deadline = [@relative_deadline, @idle_deadline, @total_deadline].compact.min
@@ -183,7 +213,7 @@ module Expect4r
           raise EmptyMatchError, 'pattern matched zero bytes' if length.zero?
           result = Result.new(status: :matched, name: rule.name, pattern_index: index, pattern: rule.pattern,
                               session: source, before: buf.byteslice(0, offset), match: buf.byteslice(offset, length),
-                              after: buf.byteslice(offset + length..), captures:, elapsed: Expect4r.monotonic - @started)
+                              after: buf.byteslice(offset + length..), staged: staged_snapshot, captures:, elapsed: Expect4r.monotonic - @started)
           return [rule.action, result, rule]
         end
       end
@@ -229,6 +259,24 @@ module Expect4r
     rescue ArgumentError => error
       raise EncodingError, error.message, cause: error
     end
+    def staged_snapshot
+      @sessions.select { |source| source.staged_bytes.positive? }.to_h { |source| [source, source.staged_buffer] }
+    end
+    def full_buffer_handler(source)
+      @patterns.events.fetch([:full_buffer, source], @patterns.events[[:full_buffer, nil]])
+    end
+    def full_buffer_result
+      source = @sessions.find { |item| item.buffer_full? && (full_buffer_handler(item) || item.staged_bytes.positive?) }
+      return unless source
+      action = full_buffer_handler(source)
+      unless action
+        return if source.staged_bytes.zero?
+        source.staged_overflow!
+      end
+      source.diagnostic(:full_buffer, buffered_bytes: source.scan_buffer.bytesize, staged_bytes: source.staged_bytes)
+      [action, Result.new(status: :full_buffer, session: source, before: source.buffer, staged: staged_snapshot,
+                          elapsed: Expect4r.monotonic - @started), nil]
+    end
     def eof_result
       source = @sessions.find(&:eof?)
       return unless source
@@ -242,7 +290,7 @@ module Expect4r
       end
       source = @sessions.one? ? @sessions.first : nil
       result = Result.new(status: :timeout, session: source, before: source ? source.buffer : ''.b,
-                          reason:, elapsed: Expect4r.monotonic - @started,
+                          reason:, elapsed: Expect4r.monotonic - @started, staged: staged_snapshot,
                           pending: source ? {} : @sessions.to_h { |s| [s, s.buffer] })
       [@patterns.events[[:timeout, nil]], result, nil]
     end

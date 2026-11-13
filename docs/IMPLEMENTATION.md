@@ -129,7 +129,8 @@ all three in separate processes. `rake package_routers` builds both gems.
 
 See [the design and phased plan](DEBUGGING_AND_BUFFERING.md) for the current
 capability inventory, Tcl/Expect comparison, proposed APIs and acceptance tests.
-P1 events, P2 scoped formatting, and P3 recording/history are implemented and
-tested; P4–P6 remain planned. Current validation: 77 core tests/382 assertions, 27 router
+P1 events, P2 scoped formatting, P3 recording/history, and P4 buffer recovery are
+implemented and tested; P5–P6 remain planned. Current validation: 97 core tests/468
+assertions, 27 router
 tests/254 assertions, 20 legacy tests/68 assertions, plus gem builds and isolated
 installation checks on rv Ruby 4.0.9.
