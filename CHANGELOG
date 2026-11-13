@@ -1,3 +1,17 @@
+=== 2.0.0 development (unreleased)
+
+ * Introduce a general-purpose Ruby 4 PTY dialogue engine with ordered pattern
+   blocks, named immutable results, continuation and monotonic time budgets.
+ * Preserve unmatched suffixes, multiline and fragmented UTF-8 input; raise on
+   buffer overflow rather than silently discarding match input.
+ * Add owned/borrowed transport handling, partial-write reporting, deterministic
+   EOF, bounded child cleanup, multi-session waits and terminal interaction.
+ * Add per-session logging/redaction and an independent router CLI simulator.
+ * Add simulator-tested IOS, IOS-XR and Junos command/configuration policies.
+ * Preserve the old API behind require 'expect4r/legacy', in separate processes.
+ * Add rv instructions, runnable local examples, functional and migration docs,
+   a gemspec and a Linux/macOS CI matrix. No gem has been published.
+
 === 0.0.11 Thu Sep 18, 2014
 
  * Adding connection retry mechanism.

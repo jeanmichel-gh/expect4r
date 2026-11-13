@@ -1,0 +1,117 @@
+# expect4r
+
+Script interactive terminal programs in Ruby, with an Expect-style pattern/action DSL.
+Ruby **4.0.6+**, Linux and macOS. This is the v2 development implementation; real IOS,
+IOS-XR and Junos devices have not yet been validated.
+
+```ruby
+require 'expect4r'
+
+Expect4r.spawn('ssh', '-o', 'StrictHostKeyChecking=yes', '-l', user, host) do |session|
+  session.expect!(timeout: 10, total_timeout: 30) do
+    on /[Pp]assword:\s*\z/ do
+      send_line password, sensitive: true
+      exp_continue
+    end
+    on /router#\z/, name: :ready
+  end
+
+  session.send_line 'show version'
+  puts session.expect!(/router#\z/, timeout: 15).before
+end
+```
+
+Strings match literal substrings; regular expressions use Ruby semantics. Patterns
+are tried in declaration order. `before`, `match`, `after` and `captures` are immutable
+byte snapshots. Completed lines are never removed implicitly, and a matched suffix
+is retained for the next wait.
+
+`expect` returns `:matched`, `:timeout` or `:eof` results. `expect!` raises on unhandled
+timeout/EOF; explicitly requesting or handling an event acknowledges it.
+`exp_continue` resumes matching and resets the relative timeout; use
+`exp_continue(reset_timeout: false)` to retain it. `total_timeout` never resets.
+
+## Development with rv
+
+```sh
+rv run bundle install
+rv run bundle exec rake test
+rv run bundle exec ruby examples/local_dialogue.rb
+rv run bundle exec ruby examples/local_router.rb
+rv run bundle exec rake package
+```
+
+The `.ruby-version` selects Ruby 4.0.9. To use another supported installed version:
+
+```sh
+rv run --ruby 4.0.6 bundle exec rake test
+```
+
+No VM, credentials or routers are needed. The tests use real local PTYs, socket
+pairs and an independent IOS/Junos/IOS-XR CLI simulator. Legacy tests run in a
+separate Ruby process because the legacy library patches IO and Kernel.
+
+## Router adapter
+
+```ruby
+require 'expect4r/router'
+
+Expect4r::Router.open(:ios, host: 'lab-router', user: 'lab',
+                      password: -> { ENV.fetch('ROUTER_PASSWORD') }) do |router|
+  result = router.exec!('show version')
+  puts result.output
+end
+```
+
+Supported simulator-tested policies: `:ios`, `:iox` and `:junos`. The adapter captures
+output across paging, preserves whitespace, detects defined device errors, and
+marks a timed-out/disconnected connection uncertain. It never replays a command.
+Use explicit `resynchronize!` or reconnect after an uncertain result.
+
+Candidate configuration uses exclusive configuration entry and explicit `commit`.
+Uncommitted candidate changes are discarded when leaving the scope. IOS commands
+apply immediately; the library does not imply rollback on failure.
+
+Default IOS/IOS-XR prompts end at `#` or `>`; Junos prompts include one trailing
+space. For customized prompts, supply an exact `prompt:` String (including its
+trailing space, if any). Remote echo handling assumes the terminal echoes the
+first command line; non-echoing device support needs separate adapter validation.
+Router output is byte-exact after the adapter removes that echo, paging markers
+and the terminal prompt. Output sinks support large responses with bounded
+matching memory; individual lines must fit the session's buffer limit.
+
+## Ownership and limits
+
+- Block factories ensure cleanup on exceptions and nonlocal exits. Sessions own
+  spawned children; `open(io, own: false)` borrows existing IO.
+- One operation owns a session at a time. Callbacks can write but cannot recursively
+  read the same session. Module-level `Expect4r.expect(from: [...])` waits on several.
+- Unmatched buffers default to 1 MiB. Overflow raises with retained/rejected bytes;
+  it does not silently trim input. Explicitly clear a failed buffer before reuse.
+- `interact` temporarily forwards terminal IO and restores input terminal settings.
+  Ctrl-T returns to the script. IO/terminal errors propagate after restoration.
+- `sensitive: true` registers literal secrets for diagnostic/transcript filtering.
+  Results, protocol IO and explicit terminal output remain raw.
+
+## Existing scripts
+
+V2 is a major API change. Existing scripts can opt into the preserved legacy API:
+
+```ruby
+require 'expect4r/legacy'
+```
+
+The two APIs must run in separate processes. See the
+[legacy examples](docs/LEGACY_README.rdoc) and [migration notes](docs/MIGRATION.md).
+
+## Design and validation
+
+- [Functional specification](docs/FUNCTIONAL_SPEC.md)
+- [Implementation scope and validation](docs/IMPLEMENTATION.md)
+- [Original repository assessment](ASSESSMENT.md)
+
+`expect-pty` 0.10.1 supplies public PTY creation and process lifecycle APIs. The
+expect4r matcher implements the stricter buffering, continuation, deadline and
+callback contracts. The dependency is pinned until compatibility checks justify
+an upgrade. The v2 implementation is locally tested software, not a promise of
+complete Tcl/Expect compatibility or validated support for every vendor release.

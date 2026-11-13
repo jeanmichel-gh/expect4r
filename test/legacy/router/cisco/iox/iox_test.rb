@@ -1,4 +1,4 @@
-require 'expect4r'
+require 'expect4r/legacy'
 require "test/unit"
 
 class TestRouterCiscoIoxIox < Test::Unit::TestCase

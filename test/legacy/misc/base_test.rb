@@ -1,5 +1,5 @@
 require "test/unit"
-require "misc/base"
+require "expect4r/legacy"
 
 
 require "test/unit"
@@ -8,11 +8,14 @@ class Base < Test::Unit::TestCase
   include Expect4r
 
   def test_add
-    assert_equal( [], Base.all)
-    Base.new
-    assert_equal( 1, Base.all.size)
-    Base.new 
-    assert_equal( 2, Base.all.size)
+    initial_size = Expect4r::Base.all.size
+    first = Expect4r::Base.new
+    assert_equal(initial_size + 1, Expect4r::Base.all.size)
+    second = Expect4r::Base.new
+    assert_equal(initial_size + 2, Expect4r::Base.all.size)
+  ensure
+    Expect4r::Base.all.delete(first)
+    Expect4r::Base.all.delete(second)
   end
 
 end
