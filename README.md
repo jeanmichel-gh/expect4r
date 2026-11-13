@@ -89,6 +89,7 @@ Legacy and modern APIs must run in separate processes. See the
 ## Design and validation
 
 - [Functional specification](docs/FUNCTIONAL_SPEC.md)
+- [Debugging and buffering design and implementation plan](docs/DEBUGGING_AND_BUFFERING.md)
 - [Implementation scope and validation](docs/IMPLEMENTATION.md)
 - [Original repository assessment](ASSESSMENT.md)
 

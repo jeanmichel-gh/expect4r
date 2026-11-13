@@ -124,3 +124,9 @@ installed load path. Run `bundle exec ruby script/check_packages.rb` after build
 
 Run `rake core`, `rake routers` or `rake legacy` independently. `rake test` runs
 all three in separate processes. `rake package_routers` builds both gems.
+
+## Planned debugging and buffering work
+
+See [the design and phased plan](DEBUGGING_AND_BUFFERING.md) for the current
+capability inventory, Tcl/Expect comparison, proposed APIs and acceptance tests.
+These improvements are planned, not implemented; begin with matcher events (P1).
