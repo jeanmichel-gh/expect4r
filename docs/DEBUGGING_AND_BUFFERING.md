@@ -1,8 +1,8 @@
 # Debugging, buffering and dialogue replay
 
-Status: P1–P4 implemented locally on 2026-11-13; P5–P6 remain planned.
+Status: P1–P5 implemented locally on 2026-11-13; P6 remains planned.
 Design baseline: commit `875ecd0`.
-Audience: expect4r maintainers and application authors. P1 events, P2 scoped debugging, P3 recording/history, and P4 buffer recovery are available in this checkout.
+Audience: expect4r maintainers and application authors. P1 events, P2 debugging, P3 recording/history, P4 buffer recovery, and P5 streaming capture are available in this checkout.
 Other new APIs below remain proposals.
 
 ## Goal and scope
@@ -150,6 +150,13 @@ See [buffer recovery](BUFFER_RECOVERY.md) for the implemented `full_buffer` DSL,
 `consume_buffer`, `resize_buffer`, `buffer_ceiling`, immutable staged snapshots,
 precedence and failure behavior. Recovery is opt-in; legacy overflow behavior remains
 the default. Generic streaming capture and replay remain P5 and P6.
+
+## P5 generic streaming capture
+
+See [streaming capture](STREAMING_CAPTURE.md) for `Capture`, `capture_until` and its
+bang form, independent retention/total limits, declared regex windows, byte-safe
+prefixes, and confirmed sink-failure progress. The router application now shares
+the generic writer while retaining vendor framing/prompt policies. Replay remains P6.
 
 ## Baseline before P1
 
@@ -346,8 +353,7 @@ at once. Existing tests and behavior remain the regression baseline.
 | P6 | Replay transport and fixture tools | A captured synthetic failure reproduces offline; fragmented replay yields same match results; TX mismatch reports first differing offset; placeholder policy enforced |
 
 P1 precedes P2/P3; P4 depends on P1's buffer accounting; P5 depends on P4; P6
-requires the stable P3 recording format. P1–P4 are implemented. Next is P5 generic
-streaming capture, followed by P6 replay; keep evaluating events before freezing
+requires the stable P3 recording format. P1–P5 are implemented. Next is P6 replay; keep evaluating events before freezing
 the public schema.
 
 ## Verification plan

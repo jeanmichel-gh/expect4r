@@ -8,6 +8,7 @@ require_relative 'expect4r/recording'
 require 'fcntl'
 require_relative 'expect4r/session'
 require_relative 'expect4r/wait'
+require_relative 'expect4r/capture'
 require_relative 'expect4r/interaction'
 module Expect4r
   VERSION = '2.0.0'

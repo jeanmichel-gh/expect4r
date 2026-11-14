@@ -317,14 +317,16 @@ module Expect4rRouters
     # Keeps command output across paging and line matches. Echo removal is
     # confined to the first exact command line; all other whitespace is retained.
     class Capture
-      attr_reader :bytes
+      def bytes = @storage.bytes
       def hierarchy
         line = @last_line.to_s.strip
         line if /\A\[edit(?: [^\]]*)?\]\z/.match?(line)
       end
       def initialize(command, sink:, limit:)
         @echo = command.b
-        @sink, @limit, @bytes, @output, @prefix, @error = sink, limit, 0, ''.b, ''.b, false
+        @sink = sink
+        @storage = Expect4r::Capture.new(sink:, limit: sink ? nil : limit, retain: sink ? 0 : nil)
+        @prefix, @error = ''.b, false
         @echo_pending = true
         @line_tail = ''.b
       end
@@ -347,7 +349,7 @@ module Expect4rRouters
         emit(@prefix)
         @prefix = ''.b
       end
-      def output = @sink ? nil : @output.dup.freeze
+      def output = @sink ? nil : @storage.output
       def device_error? = @error
       private
       def emit(bytes)
@@ -358,21 +360,9 @@ module Expect4rRouters
         lines.each { |line| @last_line = line unless line.strip.empty? }
         @last_line = @line_tail unless @line_tail.strip.empty?
         @error ||= /(?:\A|\n)(?:% (?:Invalid|Error|Bad)|error:|syntax error)/i.match?(bytes)
-        if @sink
-          offset = 0
-          while offset < bytes.bytesize
-            count = @sink.write(bytes.byteslice(offset..))
-            raise IOError, 'command sink made no progress' unless count.is_a?(Integer) && count.positive? && count <= bytes.bytesize - offset
-            offset += count
-            @bytes += count
-          end
-        else
-          if @output.bytesize + bytes.bytesize > @limit
-            raise OutputLimitError.new('command output limit exceeded', command: @echo, progress: @output.dup.freeze)
-          end
-          @output << bytes
-          @bytes += bytes.bytesize
-        end
+        @storage.append(bytes)
+      rescue Expect4r::CaptureLimitError => error
+        raise OutputLimitError.new('command output limit exceeded', command: @echo, progress: @storage.output), cause: error
       end
     end
   end

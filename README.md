@@ -93,6 +93,11 @@ prefixes or grow capacity under a configured ceiling while preserving unread dat
 See [buffer recovery](docs/BUFFER_RECOVERY.md) for examples, staging and deadlines.
 Without a handler, overflow still raises.
 
+For bounded output capture, use `session.capture_until!(terminator, sink: file,
+retain: 1024)`. Literal terminators work across reads/windows; regexps require an
+explicit matching-context declaration. See [streaming capture](docs/STREAMING_CAPTURE.md)
+for output limits, timeout results and confirmed sink-failure progress.
+
 ## Existing scripts
 
 V2 is a major API change. The historical implementation lives under `legacy/`

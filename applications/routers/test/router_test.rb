@@ -123,4 +123,23 @@ class RouterTest < RouterApplicationTest
     end
   end
 
+  def test_streaming_capture_sink_failure_reports_progress_and_marks_uncertain
+    sink = Class.new do
+      attr_reader :data
+      def initialize = (@data = ''.b)
+      def write(bytes)
+        raise IOError, 'sink failed' unless @data.empty?
+        @data << bytes.byteslice(0, 2)
+        2
+      end
+    end.new
+    router do |device|
+      error = assert_raise(Expect4r::CaptureSinkError) { device.exec!('show version', output: sink) }
+      assert_equal 2, error.progress[:sink_bytes]
+      assert_equal 2, sink.data.bytesize
+      assert_equal :uncertain, device.state
+      assert_kind_of IOError, error.cause
+    end
+  end
+
 end

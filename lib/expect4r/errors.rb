@@ -14,4 +14,7 @@ module Expect4r
      ResponseLimitError CleanupError UnsupportedOperation].each do |name|
     const_set(name, Class.new(Error))
   end
+  class CaptureError < Error; end
+  class CaptureLimitError < CaptureError; end
+  class CaptureSinkError < CaptureError; end
 end

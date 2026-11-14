@@ -81,10 +81,8 @@ module Expect4r
               key = [rule, result.session]
               raise ResponseLimitError.new('response limit exceeded', result:) if rule.limit && @counts[key] >= rule.limit
               @counts[key] += 1
-              result.session.consume(result.before.bytesize + result.match.bytesize) if @consume
-            elsif result.eof?
-              result.session.consume(result.before.bytesize)
             end
+            transfer_result(result, rule)
             result.session&.record_result(result)
             @current_result = result
             outcome = catch(@tag) do
@@ -168,6 +166,13 @@ module Expect4r
       throw @tag, [:continue, reset_timeout]
     end
     private
+    def transfer_result(result, rule)
+      if rule && @consume
+        result.session.consume(result.before.bytesize + result.match.bytesize)
+      elsif result.eof?
+        result.session.consume(result.before.bytesize)
+      end
+    end
     def emit(event, **fields)
       @sessions.each { |source| source.diagnostic(event, **fields) }
     end

@@ -25,6 +25,20 @@ router_spec = Gem::Package.new(routers).spec
 raise 'Unexpected application dependencies' unless router_spec.runtime_dependencies.map(&:name) == ['expect4r']
 
 Dir.mktmpdir('expect4r-packages-') do |home|
+  [[core, root, 'expect4r.gemspec'],
+   [routers, File.join(root, 'applications/routers'), 'expect4r-routers.gemspec']].each_with_index do |(path, source, gemspec), index|
+    package = Gem::Package.new(path)
+    expected = Gem::Specification.load(File.join(source, gemspec))
+    raise "Stale package file list: #{path}" unless package.spec.files.sort == expected.files.sort
+    extracted = File.join(home, "source-check-#{index}")
+    package.extract_files(extracted)
+    expected.files.each do |file|
+      unless File.binread(File.join(source, file)) == File.binread(File.join(extracted, file))
+        raise "Stale packaged source: #{file}"
+      end
+    end
+  end
+  puts 'Both gem payloads match current source'
   env = ENV.keys.grep(/\ABUNDLE_/).to_h { |key| [key, nil] }
   env.merge!('GEM_HOME' => home, 'GEM_PATH' => home, 'RUBYOPT' => nil, 'RUBYLIB' => nil)
   run = lambda do |*args|
@@ -50,6 +64,10 @@ Dir.mktmpdir('expect4r-packages-') do |home|
     end
     Expect4r.spawn(RbConfig.ruby, '-e', 'STDOUT.write "ready"') do |session|
       raise 'Installed core dialogue failed' unless session.expect!('ready', timeout: 5).match == 'ready'
+    end
+    Expect4r.spawn(RbConfig.ruby, '-e', 'STDOUT.write("x" * 128 + "END")', buffer_limit: 16) do |session|
+      captured = session.capture_until!('END', retain: 4, total_timeout: 5)
+      raise 'Installed streaming capture failed' unless captured.output_bytes == 128 && captured.output == 'xxxx'
     end
     puts 'Core-only installation: passed'
   CODE

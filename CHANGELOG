@@ -1,3 +1,5 @@
+V2 development: generic streaming capture, bounded retention, confirmed sink progress; router storage shares the core writer. Build gems directly from source and verify payload freshness.
+
 V2 development: separate expect4r-routers application gem and source-only legacy tree; retain vendor modes, conservative configuration depth, show and polymorphic ping.
 
 === 2.0.0 development (unreleased)

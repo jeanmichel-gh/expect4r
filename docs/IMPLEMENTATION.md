@@ -129,8 +129,18 @@ all three in separate processes. `rake package_routers` builds both gems.
 
 See [the design and phased plan](DEBUGGING_AND_BUFFERING.md) for the current
 capability inventory, Tcl/Expect comparison, proposed APIs and acceptance tests.
-P1 events, P2 scoped formatting, P3 recording/history, and P4 buffer recovery are
-implemented and tested; P5–P6 remain planned. Current validation: 97 core tests/468
-assertions, 27 router
-tests/254 assertions, 20 legacy tests/68 assertions, plus gem builds and isolated
-installation checks on rv Ruby 4.0.9.
+P1 events, P2 formatting, P3 recording/history, P4 buffer recovery, and P5 streaming
+capture are implemented; P6 remains planned. Current validation: 114 core tests/616
+assertions, 28 router tests/259 assertions, 20 legacy tests/68 assertions, plus gem
+builds and isolated installation checks on rv Ruby 4.0.9.
+
+## Packaging correction in P5
+
+The old package task reused a staging directory that did not incorporate newly
+added files. A failed build could leave an older gem available, and earlier
+installation-only checks did not detect that stale artifact. P5 replaces staging
+with direct builds from current source. `script/check_packages.rb` now compares
+both packaged file lists and every packaged file's bytes against current source
+before installing either gem. The isolated core check also exercises streaming
+capture. Current checks validate the current P1–P5 source, superseding earlier
+package-installation claims.

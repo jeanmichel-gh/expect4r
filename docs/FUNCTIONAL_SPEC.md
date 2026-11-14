@@ -486,3 +486,8 @@ design](DEBUGGING_AND_BUFFERING.md), [recording/history](RECORDING_FORMAT.md), a
 `resize_buffer`, `buffer_ceiling`, and staged-byte inspection. Default overflow
 behavior is unchanged; incremental staging is opt-in through a recovery handler
 and is also used while forwarding manual interaction.
+
+P5 adds [streaming capture](STREAMING_CAPTURE.md): `Expect4r::Capture`,
+`Session#capture_until`/`capture_until!`, bounded retained output, independent total
+limits, declared regex context, and sink errors with confirmed progress. Router
+output storage now shares the core writer; vendor framing remains in the application.
