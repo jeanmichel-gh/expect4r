@@ -5,7 +5,7 @@ module Expect4r
   # Independent streaming state per channel. Never rewrites protocol bytes.
   class Redactor
     def initialize
-      @secrets, @tail = [], ''.b
+      @secrets, @tail, @marked = [], ''.b, []
     end
     def add(secret)
       raise ArgumentError, 'secret must be a nonempty String' unless secret.is_a?(String) && !secret.empty?
@@ -13,33 +13,38 @@ module Expect4r
     end
     def feed(bytes, final: false)
       return bytes if @secrets.empty?
-      value = @tail + bytes
-      @tail = ''.b
-      partial = @secrets.filter_map do |secret|
-        max = [secret.bytesize - 1, value.bytesize].min
-        size = max.downto(1).find { |n| secret.start_with?(value.byteslice(-n, n)) }
-        value.bytesize - size if size
-      end.min
-      offset, output = 0, ''.b
-      while offset < value.bytesize
-        hit = @secrets.filter_map { |s| i = value.index(s, offset); [i, s] if i }.min_by { |i, s| [i, -s.bytesize] }
-        if partial && partial >= offset && (!hit || partial <= hit.first)
-          output << value.byteslice(offset, partial - offset)
-          if final
-            output << '[REDACTED]'
-          else
-            @tail = value.byteslice(partial..)
-          end
-          break
-        elsif hit
-          position, secret = hit
-          output << value.byteslice(offset, position - offset) << '[REDACTED]'
-          offset = position + secret.bytesize
-        else
-          output << value.byteslice(offset..)
-          break
+      value = @tail + bytes.b
+      # Carry coverage from matches crossing an emission boundary; selecting only
+      # the first full match can expose the suffix of an overlapping secret.
+      spans, partial = @marked.dup, []
+      @secrets.each do |secret|
+        at = 0
+        while (hit = value.index(secret, at))
+          spans << [hit, hit + secret.bytesize]
+          at = hit + 1
+        end
+        1.upto([secret.bytesize - 1, value.bytesize].min) do |size|
+          partial << value.bytesize - size if secret.start_with?(value.byteslice(-size, size))
         end
       end
+      cut = final ? value.bytesize : (partial.min || value.bytesize)
+      partial.each { |start| spans << [start, value.bytesize] } if final
+      merged = []
+      spans.select { |start, stop| start < cut }.map { |start, stop| [start, [stop, cut].min] }.sort.each do |start, stop|
+        if merged.any? && start <= merged.last[1]
+          merged.last[1] = [merged.last[1], stop].max
+        else
+          merged << [start, stop]
+        end
+      end
+      output, offset = ''.b, 0
+      merged.each do |start, stop|
+        output << value.byteslice(offset, start - offset) << '[REDACTED]'
+        offset = stop
+      end
+      output << value.byteslice(offset, cut - offset)
+      @tail = value.byteslice(cut..)
+      @marked = spans.select { |start, stop| stop > cut }.map { |start, stop| [[start - cut, 0].max, stop - cut] }
       output
     end
   end

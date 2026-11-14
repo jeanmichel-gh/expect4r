@@ -315,7 +315,7 @@ input when another key is selected. `escape:` always remains literal bytes, so
 `:escape`, and bytes typed after it remain in `pending_input` as before.
 
 
-For a TTY input, `raw: true` saves and restores its complete terminal mode, including on exception. For pipe/file input, raw mode is skipped. Input EOF returns `:input_eof`; it does not close the child automatically. Timeout measures total interaction duration and defaults to nil. Window size is copied on entry where supported; automatic resize tracking is deferred. Interactive display is raw, so transcript redaction must not alter the bytes shown to the user.
+For a TTY input, `raw: true` saves and restores its complete terminal mode, including on exception. For pipe/file input, raw mode is skipped. Input EOF returns `:input_eof`; it does not close the child automatically. Remote EOF returns `:eof` with any withheld partial escape in `pending_input` and leaves fresh keyboard input unread. Timeout measures total interaction duration and defaults to nil. Window size is copied on entry where supported; automatic resize tracking is deferred. Interactive display is raw, so transcript redaction must not alter the bytes shown to the user.
 
 `InteractionResult` contains `reason`, `session`, `elapsed` and frozen `pending_input`; failures raise directly. On timeout, input EOF or child EOF, pending input is empty. Terminal and read ownership are restored before returning or raising.
 

@@ -152,5 +152,5 @@ one-byte reads, split/coalesced writes, queued RX tails, explicit redaction subs
 malformed files, mismatch offsets, completeness, partial writes/errors, scaled silence,
 timer cleanup, aggregate waits and manual interaction. IOS, IOS-XR and Junos simulator
 recordings replay paging, configuration depth and polymorphic ping with identical
-application results. Real-device validation and current-phase Linux validation remain
-outstanding.
+application results. Real-device validation remains outstanding; see [review validation](REVIEW.md)
+for subsequent Linux results.

@@ -29,7 +29,7 @@ module Expect4r
           loop do
             if @eof
               interaction_reason = :eof
-              return InteractionResult.new(reason: :eof, session: self, elapsed: Expect4r.monotonic - started, pending_input: ''.b.freeze)
+              return InteractionResult.new(reason: :eof, session: self, elapsed: Expect4r.monotonic - started, pending_input: pending.dup.freeze)
             end
             left = deadline && deadline - Expect4r.monotonic
             if left && left <= 0
@@ -47,6 +47,7 @@ module Expect4r
               receive
               output_all(output, @buffer)
               consume(@buffer.bytesize)
+              next if @eof
             end
             next unless ready.include?(input)
             data = input.read_nonblock(16_384, exception: false)

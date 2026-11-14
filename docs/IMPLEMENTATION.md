@@ -55,17 +55,17 @@ sanitized device captures are available.
 
 ## Verified environments
 
-Verified on 2026-11-13 on native macOS ARM64 using `rv` Ruby 4.0.9:
+Verified on 2026-11-13 after the [focused review](REVIEW.md):
 
-| Suite | Tests | Assertions | Result |
-|---|---:|---:|---|
-| Core | 45 | 161 | Passed |
-| Router application | 27 | 254 | Passed |
-| Historical compatibility | 20 | 68 | Passed |
+| Environment | Core | Router application | Legacy |
+|---|---|---|---|
+| Native macOS ARM64, rv Ruby 4.0.9 | 140 tests / 787 assertions | 30 / 266 | 20 / 68 |
+| Linux ARM64 container, Ruby 4.0.6 | 140 tests / 787 assertions | 30 / 266 | 20 / 68 |
 
-Earlier, before the mode/ping expansion and package split, Linux ARM64 Ruby 4.0.6
-passed 56 modern tests/209 assertions and 20 legacy tests/68 assertions. That
-result does not validate the latest changes on Linux.
+All suites passed: 190 tests / 1,121 assertions per environment. Linux also passed
+all three runnable examples, both gem builds, source-to-package comparisons and
+isolated installation checks. See the review report for findings fixed and remaining
+manual-terminal/real-device validation.
 
 Core and legacy tests run in different Ruby processes so the old IO patches
 cannot affect new engine results. The process cleanup test includes a child
@@ -130,9 +130,9 @@ all three in separate processes. `rake package_routers` builds both gems.
 See [the design and phased plan](DEBUGGING_AND_BUFFERING.md) for the current
 capability inventory, Tcl/Expect comparison, proposed APIs and acceptance tests.
 P1 events, P2 formatting, P3 recording/history, P4 buffer recovery, and P5 streaming
-capture and P6 replay are implemented. Current validation: 133 core tests/756
+capture and P6 replay are implemented. Current validation: 140 core tests/787
 assertions, 30 router tests/266 assertions, 20 legacy tests/68 assertions, plus gem
-builds and isolated installation checks on rv Ruby 4.0.9.
+builds and isolated installation checks on rv Ruby 4.0.9 and Linux Ruby 4.0.6.
 
 ## Packaging correction in P5
 

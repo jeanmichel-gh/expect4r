@@ -120,6 +120,7 @@ Legacy and modern APIs must run in separate processes. See the
 - [Functional specification](docs/FUNCTIONAL_SPEC.md)
 - [Debugging and buffering design and implementation plan](docs/DEBUGGING_AND_BUFFERING.md)
 - [Implementation scope and validation](docs/IMPLEMENTATION.md)
+- [Review findings and Mac/Linux validation](docs/REVIEW.md)
 - [Original repository assessment](ASSESSMENT.md)
 
 `expect-pty` 0.10.1 supplies public PTY creation and process lifecycle APIs. The

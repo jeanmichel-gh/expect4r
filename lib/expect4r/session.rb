@@ -318,10 +318,12 @@ module Expect4r
       read_offset = @received_bytes
       @received_bytes += data.bytesize
       @last_receive_fresh = true
-      @context.received! if @context.respond_to?(:received!)
+      # Deadline notifications can invoke user diagnostics during backpressure.
+      # Retain bytes and advance redaction before calling those fallible hooks.
       if @buffer_recovery
         @staged = data
         safe = @redactor.feed(data)
+        @context.received! if @context.respond_to?(:received!)
         @recording&.io(:rx, data)
         drain_staged
         diagnostic(:receive, bytes: data.bytesize, stream_offset: read_offset, buffered_bytes: @buffer.bytesize, staged_bytes: @staged.bytesize)
@@ -334,6 +336,12 @@ module Expect4r
         @failed = true
         error = BufferOverflow.new('unmatched buffer limit exceeded', buffer: buffer,
                                    rejected: data.byteslice(capacity..).freeze)
+        safe = @redactor.feed(data)
+        begin
+          @context.received! if @context.respond_to?(:received!)
+        rescue StandardError => diagnostic_error
+          @cleanup_errors << diagnostic_error
+        end
         begin
           @recording&.io(:rx, data)
         rescue StandardError => recording_error
@@ -341,13 +349,19 @@ module Expect4r
         end
         diagnostic_during_failure(:receive, bytes: data.bytesize, stream_offset: read_offset, buffered_bytes: @buffer.bytesize)
         diagnostic_during_failure(:overflow, limit: @buffer_limit, buffered_bytes: @buffer.bytesize, rejected_bytes: data.bytesize - capacity)
-        deliver(@redactor.feed(data))
+        begin
+          deliver(safe)
+        rescue StandardError => delivery_error
+          @cleanup_errors << delivery_error
+        end
         raise error
       end
       @buffer << data
+      safe = @redactor.feed(data)
+      @context.received! if @context.respond_to?(:received!)
       @recording&.io(:rx, data)
       diagnostic(:receive, bytes: data.bytesize, stream_offset: read_offset, buffered_bytes: @buffer.bytesize)
-      deliver(@redactor.feed(data))
+      deliver(safe)
       true
     rescue Errno::EIO => error
       raise TransportError, 'non-terminal read failed' unless @reader.tty?

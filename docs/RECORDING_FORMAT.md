@@ -118,4 +118,4 @@ tests/254 assertions, and 20 legacy tests/68 assertions passed. Both gems built 
 passed isolated installation checks. Tests cover binary bytes, fragmented and
 overlapping secrets, redaction against an independent whole-stream reference,
 partial transport and sink writes, overflow bytes, bounded history, sink failures
-and primary-error preservation. Linux validation of this phase remains pending.
+and primary-error preservation. See [review validation](REVIEW.md) for subsequent Linux results.

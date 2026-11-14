@@ -137,4 +137,4 @@ matches, a larger-than-capacity read, prefix consumption and growth, ceiling val
 no-progress actions, callback failures and nonlocal exits, retained staged snapshots,
 UTF-8 boundaries, aggregate-source priority, EOF and deadline behavior, unchanged
 overflow defaults, exact transcript/recording bytes, and manual handoff. A real PTY
-produced 200 KB while using a 4 KB matching buffer. Linux validation remains pending.
+produced 200 KB while using a 4 KB matching buffer. See [review validation](REVIEW.md) for subsequent Linux results.

@@ -155,5 +155,4 @@ following dialogues, total deadlines and router uncertainty. A real PTY produced
 300 KB without newlines using a 4 KB matching buffer and 32-byte retained tail.
 Both gems built and passed isolated installation checks, including the installed
 streaming API; packaged file lists and bytes match current source. The package task
-now builds directly from source to prevent stale staging artifacts. Linux validation
-remains pending; [P6 offline replay](REPLAY.md) is now available.
+now builds directly from source to prevent stale staging artifacts. See [review validation](REVIEW.md) for subsequent Linux results; [P6 offline replay](REPLAY.md) is now available.
