@@ -24,15 +24,34 @@ class TimingTest < CoreTest
   def test_continuation_timer_reset
     [true, false].each do |reset|
       with_input do |session, peer|
-        producer = Thread.new { sleep 0.04; peer.write('one'); sleep 0.04; peer.write('two') }
-        result = session.expect(timeout: 0.065) do |patterns|
-          patterns.on('one') { exp_continue(reset_timeout: reset) }
-          patterns.on('two')
+        clock = 0.0
+        original_clock = Expect4r.method(:monotonic)
+        begin
+          Expect4r.singleton_class.remove_method(:monotonic)
+          Expect4r.define_singleton_method(:monotonic) { clock }
+          wait = Expect4r::Wait.new([session], [], timeout: 10) do |patterns|
+            patterns.on('one') { exp_continue(reset_timeout: reset) }
+            patterns.on('two')
+          end
+          arrivals = [[6.0, 'one'], [12.0, 'two']]
+          # Exercise actual deadline/reset logic without a hosted-runner sleep race.
+          wait.define_singleton_method(:select_readers) do |active, timeout|
+            at, bytes = arrivals.first
+            if timeout && clock + timeout < at
+              clock += timeout
+              []
+            else
+              clock = at
+              peer.write(bytes)
+              arrivals.shift
+              active
+            end
+          end
+          assert_equal reset ? :matched : :timeout, wait.run.status
+        ensure
+          Expect4r.singleton_class.remove_method(:monotonic)
+          Expect4r.define_singleton_method(:monotonic, original_clock)
         end
-        assert_equal reset ? :matched : :timeout, result.status
-      ensure
-        producer&.kill
-        producer&.join
       end
     end
   end
