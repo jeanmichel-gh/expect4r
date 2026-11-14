@@ -10,6 +10,7 @@ require_relative 'expect4r/session'
 require_relative 'expect4r/wait'
 require_relative 'expect4r/capture'
 require_relative 'expect4r/interaction'
+require_relative 'expect4r/replay'
 module Expect4r
   VERSION = '2.0.0'
   class << self

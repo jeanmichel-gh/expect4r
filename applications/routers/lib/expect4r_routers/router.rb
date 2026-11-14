@@ -145,8 +145,9 @@ module Expect4rRouters
         begin
           written = @session.send_line(command)
           result = @session.expect(timeout:, idle_timeout:, total_timeout:) do |patterns|
-            patterns.on(/(?: --More-- |--More--|---\(more(?: \d+%)?\)---)/n, name: :pager, limit: 100) do |event|
+            patterns.on(/(?: --More-- | --More--|--More--|---\(more(?: \d+%)?\)---)/n, name: :pager, limit: 100) do |event|
               accumulator.append(event.before)
+              accumulator.pager(event.match)
               write ' '
               exp_continue(reset_timeout: false)
             end
@@ -158,6 +159,10 @@ module Expect4rRouters
                 send_line(value, sensitive: !!sensitive)
                 exp_continue(reset_timeout: false)
               end
+            end
+            patterns.on(/\A +/n, name: :leading_spaces) do |event|
+              accumulator.leading_spaces(event.match)
+              exp_continue(reset_timeout: false)
             end
             patterns.on(router.prompt_pattern, name: :prompt)
             patterns.on(/[^\n]*\n/n, name: :line) do |event|
@@ -330,7 +335,32 @@ module Expect4rRouters
         @echo_pending = true
         @line_tail = ''.b
       end
+      def leading_spaces(bytes)
+        if @pager_space_pending
+          bytes = bytes.delete_prefix(' ')
+          @pager_space_pending = false
+        end
+        return if bytes.empty?
+        previous = @leading_space ? ' ' : ''
+        @leading_space = false
+        append(previous + bytes.byteslice(0, bytes.bytesize - 1))
+        @leading_space = true
+      end
+      def pager(marker)
+        had_space, @leading_space = @leading_space, false
+        append(' ') if had_space && marker != '--More--'
+        @pager_space_pending = marker == ' --More--' || (marker == '--More--' && had_space)
+      end
       def append(bytes)
+        return if bytes.empty?
+        if @leading_space
+          @leading_space = false
+          bytes = ' ' + bytes
+        end
+        if @pager_space_pending
+          bytes = bytes.delete_prefix(' ')
+          @pager_space_pending = false
+        end
         if @echo_pending
           @prefix << bytes
           return unless (endline = @prefix.index("\n"))
@@ -345,6 +375,10 @@ module Expect4rRouters
         end
       end
       def finish
+        if @leading_space
+          @leading_space = false
+          append(' ')
+        end
         @echo_pending = false
         emit(@prefix)
         @prefix = ''.b
@@ -359,7 +393,7 @@ module Expect4rRouters
         @line_tail = lines.pop
         lines.each { |line| @last_line = line unless line.strip.empty? }
         @last_line = @line_tail unless @line_tail.strip.empty?
-        @error ||= /(?:\A|\n)(?:% (?:Invalid|Error|Bad)|error:|syntax error)/i.match?(bytes)
+        @error ||= /(?:\A|\n)(?:% (?:Invalid|Error|Bad)|error:|syntax error)/i.match?(text)
         @storage.append(bytes)
       rescue Expect4r::CaptureLimitError => error
         raise OutputLimitError.new('command output limit exceeded', command: @echo, progress: @storage.output), cause: error

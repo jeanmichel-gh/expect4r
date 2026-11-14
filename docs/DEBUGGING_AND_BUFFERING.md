@@ -1,8 +1,8 @@
 # Debugging, buffering and dialogue replay
 
-Status: P1–P5 implemented locally on 2026-11-13; P6 remains planned.
+Status: P1–P6 implemented locally on 2026-11-13; development APIs remain under review.
 Design baseline: commit `875ecd0`.
-Audience: expect4r maintainers and application authors. P1 events, P2 debugging, P3 recording/history, P4 buffer recovery, and P5 streaming capture are available in this checkout.
+Audience: expect4r maintainers and application authors. P1 events, P2 debugging, P3 recording/history, P4 recovery, P5 capture and P6 replay are available in this checkout.
 Other new APIs below remain proposals.
 
 ## Goal and scope
@@ -68,7 +68,7 @@ This illustrates event overhead; it is not a production throughput or memory
 benchmark and does not compare disabled tracing against the pre-P1 code.
 
 P1 deliberately shipped metadata only. P2 adds the scoped formatter below;
-P3 now adds recording/history; recoverable full-buffer handling and replay remain planned.
+The subsequent phases now add recording/history, recovery, streaming capture and replay.
 
 ## P2 scoped debugging
 
@@ -141,7 +141,7 @@ recording, live-display toggle or replay is added in P2.
 See [the usage guide and version 1 format](RECORDING_FORMAT.md) for `recording:`,
 `history:`, binary payloads, original IO timestamps/ranges, length-preserving secret
 masks, bounded history, completion semantics and sink-failure behavior. Redacted
-recordings require explicit substitutions in future replay; replay is still P6.
+recordings require explicit substitutions in the P6 replay API.
 P3 also corrects outgoing Logger redaction across separate write calls.
 
 ## P4 buffer recovery
@@ -149,14 +149,22 @@ P3 also corrects outgoing Logger redaction across separate write calls.
 See [buffer recovery](BUFFER_RECOVERY.md) for the implemented `full_buffer` DSL,
 `consume_buffer`, `resize_buffer`, `buffer_ceiling`, immutable staged snapshots,
 precedence and failure behavior. Recovery is opt-in; legacy overflow behavior remains
-the default. Generic streaming capture and replay remain P5 and P6.
+the default. P5 capture and P6 replay build on this foundation.
 
 ## P5 generic streaming capture
 
 See [streaming capture](STREAMING_CAPTURE.md) for `Capture`, `capture_until` and its
 bang form, independent retention/total limits, declared regex windows, byte-safe
 prefixes, and confirmed sink-failure progress. The router application now shares
-the generic writer while retaining vendor framing/prompt policies. Replay remains P6.
+the generic writer while retaining vendor framing/prompt policies. P6 replay is also implemented.
+
+## P6 offline replay
+
+See [offline replay](REPLAY.md) for strict recording validation, queued input,
+outgoing-byte verification, alternate fragmentation, explicit secret substitutions,
+scaled timing, injected transport failures and close-time verification. Fixture
+inspection and a record/replay PTY example are included. One-byte router replay also
+fixed fragmented pager-space handling while preserving real indentation.
 
 ## Baseline before P1
 
@@ -353,8 +361,8 @@ at once. Existing tests and behavior remain the regression baseline.
 | P6 | Replay transport and fixture tools | A captured synthetic failure reproduces offline; fragmented replay yields same match results; TX mismatch reports first differing offset; placeholder policy enforced |
 
 P1 precedes P2/P3; P4 depends on P1's buffer accounting; P5 depends on P4; P6
-requires the stable P3 recording format. P1–P5 are implemented. Next is P6 replay; keep evaluating events before freezing
-the public schema.
+requires the stable P3 recording format. P1–P6 are implemented. Continue evaluating development APIs and event/schema
+contracts before a public release; real-device and broader platform validation remain.
 
 ## Verification plan
 

@@ -491,3 +491,8 @@ P5 adds [streaming capture](STREAMING_CAPTURE.md): `Expect4r::Capture`,
 `Session#capture_until`/`capture_until!`, bounded retained output, independent total
 limits, declared regex context, and sink errors with confirmed progress. Router
 output storage now shares the core writer; vendor framing remains in the application.
+
+P6 adds [offline replay](REPLAY.md): `Expect4r.replay`, strict `ReplayTrace` loading,
+fragmentation and scaled timing, explicit redacted-span substitutions, transport-error
+injection, and `Session#verify_replay!`. The factory performs close-time verification
+and owns its local pipe/timer resources.

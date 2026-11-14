@@ -1,7 +1,6 @@
 # Dialogue recording and diagnostic history
 
-Implemented in P3, 2026-11-13. Version 1 is a development format; replay is not
-implemented yet. The incoming-only `transcript:` API remains available separately.
+Implemented in P3, 2026-11-13. Version 1 is a development format; [P6 replay](REPLAY.md) is implemented. The incoming-only `transcript:` API remains available separately.
 
 ## Usage
 
@@ -87,8 +86,8 @@ redaction span starting at offset zero. The two original IO observations remain.
 Buffered undecided payload tails are bounded by the longest registered secret;
 ordinary content and overlap-safe masked prefixes are emitted incrementally.
 
-A filtered recording is not an exact wire capture. Future strict replay must require
-explicit substitutions/expectations for marked spans; zero masks are not wildcards.
+A filtered recording is not an exact wire capture. Strict replay requires
+explicit substitutions for marked spans; zero masks are not wildcards.
 Literal filtering is not a detector for arbitrary credentials or other private data.
 P2 buffer snapshots remain suppressed after secrets are registered. Existing outgoing
 Logger byte tracing now also maintains redaction state across separate write calls.
@@ -109,7 +108,8 @@ truncated completion must be treated as incomplete by strict readers.
 it does not mean the remote command succeeded or that unread kernel/child output was
 captured. A fully recorded timeout, partial write or buffer overflow can still have a
 complete recording. Buffered-file flush/fsync/durability is the caller's responsibility;
-there is no automatic rotation, retention service or replay implementation in P3.
+the recording writer provides no automatic rotation or retention service. Offline
+replay is provided by P6.
 
 ## Validation
 

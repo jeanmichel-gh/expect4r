@@ -14,6 +14,10 @@ module Expect4r
      ResponseLimitError CleanupError UnsupportedOperation].each do |name|
     const_set(name, Class.new(Error))
   end
+  class ReplayError < Error; end
+  class ReplayFormatError < ReplayError; end
+  class ReplayMismatchError < ReplayError; end
+  class ReplayIncompleteError < ReplayError; end
   class CaptureError < Error; end
   class CaptureLimitError < CaptureError; end
   class CaptureSinkError < CaptureError; end

@@ -142,4 +142,51 @@ class RouterTest < RouterApplicationTest
     end
   end
 
+  def test_router_modes_paging_and_ping_round_trip_through_recording
+    [:ios, :iox, :junos].each do |adapter|
+      recording = StringIO.new
+      exercise = lambda do |device|
+        text = device.show!('paged').output
+        depth = nil
+        device.configure do |config|
+          config.command(adapter == :junos ? 'edit protocols bgp group EDGE' : 'router bgp 65000')
+          depth = device.config_depth
+        end
+        result = device.ping('192.0.2.1')
+        [text, depth, result.status, result.transmitted, result.received, device.mode]
+      end
+      original = nil
+      router(adapter:, recording:) { |device| original = exercise.call(device) }
+      trace = Expect4r::ReplayTrace.load(StringIO.new(recording.string))
+      substitutions = trace.redactions.to_h do |span|
+        value = span[:bytes] == 7 ? "secret\r" : 'secret'
+        [[span[:direction], span[:stream_offset]], value]
+      end
+      Expect4r.replay(trace, substitutions:, fragment_size: 1) do |session|
+        device = Expect4rRouters::Router.new(session, adapter:, capture_limit: 8_388_608, prompt: nil)
+        device.login(user: 'lab', password: -> { 'secret' }, timeout: 3, attempts: 3)
+        device.exec!(device.policy.fetch(:paging))
+        assert_equal original, exercise.call(device)
+        assert session.verify_replay!
+      end
+    end
+  end
+
+  def test_fragmented_pager_control_spaces_preserve_real_indentation
+    capture = Expect4rRouters::Router::Capture.new('show', sink: nil, limit: 1000)
+    capture.append("show\r\npage 1\r\n")
+    capture.leading_spaces(' ')
+    capture.pager('--More--')
+    capture.leading_spaces('   ') # One control space, two real indentation spaces.
+    capture.append("page 2\r\n")
+    capture.pager('--More--') # Bare marker has no implied trailing control space.
+    capture.leading_spaces('  ')
+    capture.append("page 3\r\n")
+    capture.leading_spaces(' ')
+    capture.pager('---(more)---') # Junos marker does not own preceding output space.
+    capture.append("page 4\r\n")
+    capture.finish
+    assert_equal "page 1\r\n  page 2\r\n  page 3\r\n page 4\r\n", capture.output
+  end
+
 end

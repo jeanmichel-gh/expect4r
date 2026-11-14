@@ -106,7 +106,7 @@ mask changes to echo/canonical/signal handling.
   are not implemented.
 
 The GitHub Actions workflow defines Linux/minimum-Ruby and macOS/rv-Ruby checks.
-It has not run on GitHub; no branch has been pushed and no gem published.
+These phase commits have been validated locally; no gem has been published.
 
 ## Package boundary
 
@@ -130,8 +130,8 @@ all three in separate processes. `rake package_routers` builds both gems.
 See [the design and phased plan](DEBUGGING_AND_BUFFERING.md) for the current
 capability inventory, Tcl/Expect comparison, proposed APIs and acceptance tests.
 P1 events, P2 formatting, P3 recording/history, P4 buffer recovery, and P5 streaming
-capture are implemented; P6 remains planned. Current validation: 114 core tests/616
-assertions, 28 router tests/259 assertions, 20 legacy tests/68 assertions, plus gem
+capture and P6 replay are implemented. Current validation: 130 core tests/700
+assertions, 30 router tests/266 assertions, 20 legacy tests/68 assertions, plus gem
 builds and isolated installation checks on rv Ruby 4.0.9.
 
 ## Packaging correction in P5
@@ -142,5 +142,13 @@ installation-only checks did not detect that stale artifact. P5 replaces staging
 with direct builds from current source. `script/check_packages.rb` now compares
 both packaged file lists and every packaged file's bytes against current source
 before installing either gem. The isolated core check also exercises streaming
-capture. Current checks validate the current P1–P5 source, superseding earlier
+capture. Current checks validate the current P1–P6 source, superseding earlier
 package-installation claims.
+
+## Replay validation
+
+[Offline replay](REPLAY.md) covers strict file validation, alternate fragmentation,
+explicit redacted-span substitutions, queued input, TX verification, scaled timing,
+recorded errors and EOF. The local PTY record/replay example passes. Simulator
+recordings round-trip IOS/IOS-XR/Junos paging, configuration depth and ping at one-byte
+fragmentation; this also exposed and fixed split pager-control-space leakage.

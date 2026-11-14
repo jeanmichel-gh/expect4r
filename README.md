@@ -86,7 +86,9 @@ for event semantics, sink failures and the remaining implementation phases.
 Use `recording: file` for versioned RX/TX JSONL recordings, and
 `history: { max_events: 100, max_bytes: 65_536 }` for bounded metadata history.
 See [recording and history](docs/RECORDING_FORMAT.md) for usage, secret masking,
-completion and failure semantics. Replay remains planned.
+completion and failure semantics. Use `Expect4r.replay(path, fragment_size: 1)`
+to exercise recorded dialogues offline; see [replay](docs/REPLAY.md) for timing,
+secret substitutions and verification.
 
 Opt into buffer recovery with a `full_buffer` action. It can explicitly consume
 prefixes or grow capacity under a configured ceiling while preserving unread data.

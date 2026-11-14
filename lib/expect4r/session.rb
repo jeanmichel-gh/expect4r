@@ -161,6 +161,13 @@ module Expect4r
         end
         trace(:write, "#{offset} bytes")
         offset
+      rescue ReplayMismatchError => error
+        raise ReplayMismatchError.new(error.message, bytes_written: offset || 0, progress: error.progress), cause: error
+      rescue WriteTimeout => error
+        if error.progress && error.progress[:replay]
+          raise WriteTimeout.new('recorded write timeout', bytes_written: offset || 0, progress: error.progress), cause: error
+        end
+        raise
       rescue SystemCallError, IOError => error
         diagnostic_during_failure(:write_error, error_class: error.class.name, confirmed_bytes: offset || 0)
         raise TransportError.new('write failed', bytes_written: offset || 0), cause: error
@@ -192,6 +199,7 @@ module Expect4r
           finish_transcript
           safe_log = @tx_redactor.feed(''.b, final: true)
           @logger&.debug({ event: :sending, message: safe_log }.freeze) if @trace_bytes && !safe_log.empty?
+          @backend.verify_replay! if @backend.respond_to?(:verify_replay!)
         rescue StandardError => error
           failure = error
         ensure

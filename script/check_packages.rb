@@ -69,6 +69,20 @@ Dir.mktmpdir('expect4r-packages-') do |home|
       captured = session.capture_until!('END', retain: 4, total_timeout: 5)
       raise 'Installed streaming capture failed' unless captured.output_bytes == 128 && captured.output == 'xxxx'
     end
+    require 'stringio'
+    replay_source = StringIO.new
+    recorder = Expect4r::Diagnostics::Recording.new(replay_source, session_id: 'package-check', label: nil)
+    recorder.io(:rx, 'ready>')
+    recorder.io(:tx, "go\r")
+    recorder.io(:rx, 'ok>')
+    recorder.event(session_id: 'package-check', event: :eof)
+    recorder.finish(complete: true)
+    Expect4r.replay(StringIO.new(replay_source.string), fragment_size: 1, require_all_reads: true) do |session|
+      session.expect!('ready>')
+      session.send_line('go')
+      session.expect!('ok>')
+      session.expect!(:eof)
+    end
     puts 'Core-only installation: passed'
   CODE
   install.call(routers)
