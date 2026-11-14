@@ -92,7 +92,7 @@ Signatures below are descriptive, not Ruby type declarations. Unknown options ra
 | `session.write(bytes, timeout: session.write_timeout, sensitive: false)` | Integer | Write unchanged bytes, handling partial writes. |
 | `session.send_line(text = '', ending: session.line_ending, timeout: session.write_timeout, sensitive: false)` | Integer | Write exact text followed by the selected terminator. |
 | `session.exp_continue(reset_timeout: true)` | Nonlocal control | Continue the current match operation after an action. |
-| `session.interact(input: $stdin, output: $stdout, escape: "\x14", timeout: nil, raw: true)` | InteractionResult | Temporarily give terminal control to the user. |
+| `session.interact(input: $stdin, output: $stdout, escape: "\x14", escape_key: nil, timeout: nil, raw: true)` | InteractionResult | Temporarily give terminal control to the user. |
 | `session.close(grace: 1, kill_after: 1)` | Process::Status or nil | Release owned resources and reap the owned child. |
 | `session.wait(timeout: 5)` | Process::Status or nil | Observe/reap child exit, without closing the session. |
 | `session.terminate(signal: :TERM)` | nil | Signal the owned direct child. |
@@ -297,6 +297,23 @@ session.send_line 'show version'
 ```
 
 Forward pending buffered bytes once before newly received bytes. Recognize a nonempty literal escape byte sequence across input-read boundaries and withhold the escape sequence itself from the child; bytes typed after it remain available through `InteractionResult#pending_input`. The caller retains that remainder for its next higher-level interaction; no terminal pushback is assumed. The default Ctrl-T is conventional for this project.
+
+Readable control-key notation is also supported:
+
+```ruby
+session.interact(escape_key: 'C-]') # Ctrl-] returns to Ruby.
+session.interact(escape_key: 'C-x') # Ctrl-X, as in the legacy configurable-key API.
+session.interact(escape: "\x1d")  # Equivalent raw byte for Ctrl-].
+```
+
+`escape_key:` accepts case-insensitive `C-A` through `C-Z`, plus `C-@` (NUL),
+`C-[` (ESC), `C-\` (0x1c), `C-]` (0x1d), `C-^` (0x1e), `C-_` (0x1f), and
+`C-?` (DEL). When supplied, it overrides `escape:` for that interaction only.
+The selected key is withheld from the child; Ctrl-T becomes ordinary forwarded
+input when another key is selected. `escape:` always remains literal bytes, so
+`escape: 'C-]'` means the three characters rather than Ctrl-]. Return reason is
+`:escape`, and bytes typed after it remain in `pending_input` as before.
+
 
 For a TTY input, `raw: true` saves and restores its complete terminal mode, including on exception. For pipe/file input, raw mode is skipped. Input EOF returns `:input_eof`; it does not close the child automatically. Timeout measures total interaction duration and defaults to nil. Window size is copied on entry where supported; automatic resize tracking is deferred. Interactive display is raw, so transcript redaction must not alter the bytes shown to the user.
 

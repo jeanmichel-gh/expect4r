@@ -10,6 +10,7 @@ process because the old implementation changes global IO/Kernel behavior.
 |---|---|
 | `Ios.new_ssh(...)` followed by `login` | `Expect4rRouters.open(:ios, host: ..., user: ..., password: ...)` |
 | `exp_send` with implicitly split/trimmed lines | `send_line` for one exact line; `write` for bytes; `exec_many` for explicit arrays |
+| `interact('C-x')` | `session.interact(escape_key: 'C-x')`; raw `escape:` sequences also remain supported |
 | Nested output arrays | `CommandResult#output` byte String, or a borrowed streaming sink |
 | `expect(pattern, seconds, matches)` | `expect(pattern, timeout: seconds)` or an ordered pattern/action block |
 | Exceptions with `err_msg` | Ordinary useful `message`, `cause` and structured `result` |

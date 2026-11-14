@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 module Expect4r
   class Session
-    def interact(input: $stdin, output: $stdout, escape: "\x14", timeout: nil, raw: true)
+    def interact(input: $stdin, output: $stdout, escape: "\x14", escape_key: nil, timeout: nil, raw: true)
+      escape = interaction_control_key(escape_key) unless escape_key.nil?
       timeout = Expect4r.duration(timeout)
       raise TypeError, 'interaction input must be IO' unless input.is_a?(IO)
       raise TypeError, 'output must support write' unless output.respond_to?(:write)
@@ -89,6 +90,14 @@ module Expect4r
       end
     end
     private
+    def interaction_control_key(key)
+      unless key.is_a?(String) && key.ascii_only? && key.bytesize == 3 &&
+             key.upcase.start_with?('C-') && (63..95).cover?(key.upcase.getbyte(2))
+        raise ArgumentError, 'escape_key must be C-A through C-Z, C-@, C-[, C-\\, C-], C-^, C-_ or C-?'
+      end
+      value = key.upcase.getbyte(2)
+      (value == 63 ? 127 : value & 31).chr(Encoding::BINARY)
+    end
     # The interaction owns the session. Writes borrow that ownership, never reads.
     def interaction_write(bytes, deadline: nil, timeout: @write_timeout)
       context = Struct.new(:in_action?, :write_deadline).new(true, deadline)

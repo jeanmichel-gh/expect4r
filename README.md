@@ -69,7 +69,9 @@ or its vendor rules. See its README for examples and current limitations.
 - Unmatched buffers default to 1 MiB. Overflow raises with retained/rejected bytes;
   it does not silently trim input. Explicitly clear a failed buffer before reuse.
 - `interact` temporarily forwards terminal IO and restores input terminal settings.
-  Ctrl-T returns to the script. IO/terminal errors propagate after restoration.
+  Ctrl-T returns to the script by default. Choose another key with
+  `session.interact(escape_key: 'C-]')` for Ctrl-], or use raw bytes such as
+  `session.interact(escape: "\x1d")`. IO/terminal errors propagate after restoration.
 - `sensitive: true` registers literal secrets for diagnostic/transcript filtering.
   Results, protocol IO and explicit terminal output remain raw.
 

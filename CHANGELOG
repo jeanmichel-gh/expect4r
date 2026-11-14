@@ -1,3 +1,5 @@
+V2 development: readable configurable interaction return keys via escape_key (for example C-]); retain literal byte escapes and the Ctrl-T default.
+
 V2 development: strict offline recording replay, alternate fragmentation, scaled timing and TX verification; fix fragmented router pager spaces and retain genuine indentation.
 
 V2 development: generic streaming capture, bounded retention, confirmed sink progress; router storage shares the core writer. Build gems directly from source and verify payload freshness.

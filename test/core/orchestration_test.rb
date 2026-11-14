@@ -88,4 +88,46 @@ class OrchestrationTest < CoreTest
     master&.close
     slave&.close
   end
+  def test_custom_control_key_returns_to_ruby_and_forwards_old_default
+    { 'C-t' => "\x14", 'C-x' => "\x18", 'C-]' => "\x1d", 'C-[' => "\x1b", 'C-@' => "\x00", 'C-?' => "\x7f",
+      'c-a' => "\x01", 'C-Z' => "\x1a", 'C-\\' => "\x1c", 'C-^' => "\x1e", 'C-_' => "\x1f" }.each do |key, byte|
+      with_input do |session, peer|
+        input, sender = IO.pipe
+        sent = key.casecmp?('C-t') ? 'hello' : "hello\x14world" # Other keys leave Ctrl-T as ordinary input.
+        sender.write(sent + byte + 'remaining')
+        result = session.interact(input:, output: StringIO.new, escape_key: key, timeout: 1)
+        assert_equal :escape, result.reason
+        assert_equal sent, peer.read(sent.bytesize)
+        assert_equal 'remaining', result.pending_input
+        assert session.expect('never', timeout: 0).timeout?
+      ensure
+        input&.close
+        sender&.close
+      end
+    end
+  end
+  def test_raw_escape_remains_literal_and_readable_key_overrides_it
+    [['C-]', nil, 'C-]'], ['ignored', 'C-]', "\x1d"]].each do |escape, escape_key, typed|
+      with_input do |session, peer|
+        input, sender = IO.pipe
+        sender.write('before' + typed + 'after')
+        result = session.interact(input:, output: StringIO.new, escape:, escape_key:, timeout: 1)
+        assert_equal :escape, result.reason
+        assert_equal 'before', peer.read(6)
+        assert_equal 'after', result.pending_input
+      ensure
+        input&.close
+        sender&.close
+      end
+    end
+  end
+  def test_invalid_control_key_is_rejected_before_interaction
+    with_input('ready') do |session, peer|
+      ['', 'C-1', 'Ctrl-X', 'C-é', false].each do |key|
+        assert_raise(ArgumentError) { session.interact(escape_key: key) }
+      end
+      assert_equal 'ready', session.expect!('ready').match
+    end
+  end
+
 end
