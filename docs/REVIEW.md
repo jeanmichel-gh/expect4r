@@ -57,6 +57,8 @@ installed-gem checks are recorded with the same review changes.
 
 ## Remaining work
 
+- The nested-PTY driver passed Ctrl-] and Ctrl-X, including terminal settings and
+  resumed automation. A human run remains: [manual interaction check](MANUAL_INTERACT.md).
 - Manually exercise interaction from the user's real Mac terminal: custom return
   key, terminal restoration, and return to automation. Automated PTY tests are useful
   but do not replace this user check.

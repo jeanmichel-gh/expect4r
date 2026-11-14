@@ -51,6 +51,11 @@ No VM, credentials or routers are needed. The tests use real local PTYs, socket
 pairs and an independent IOS/Junos/IOS-XR CLI simulator. Legacy tests run in a
 separate Ruby process because the legacy library patches IO and Kernel.
 
+For a real terminal check, run `rv run bundle exec ruby examples/manual_interact.rb`
+in Mac Terminal. Type `manual-check`, press Enter, wait for `manual>`, then press
+Ctrl-]. The example verifies terminal restoration and resumes automation. Use a
+`C-x` argument to choose Ctrl-X. See [manual interaction check](docs/MANUAL_INTERACT.md).
+
 ## Router application
 
 Router automation is a separate gem, **expect4r-routers**, in
