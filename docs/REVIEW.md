@@ -55,13 +55,16 @@ installed-gem checks are recorded with the same review changes.
 
 `git diff --check` passes. GitHub CI execution is a separate check after pushing.
 
+## Human terminal validation
+
+The user completed the [Mac Terminal check](MANUAL_INTERACT.md) and reported
+`MANUAL_OK`, `RETURNED_TO_RUBY`, `TERMINAL_RESTORED`, and `INTERACT_CHECK_PASSED`.
+This confirms manual interaction, the default harness Ctrl-] return key, exact
+terminal-setting restoration and successful resumed automation. The driven
+nested-PTY checks also passed Ctrl-] and Ctrl-X; only Ctrl-] is human-confirmed.
+
 ## Remaining work
 
-- The nested-PTY driver passed Ctrl-] and Ctrl-X, including terminal settings and
-  resumed automation. A human run remains: [manual interaction check](MANUAL_INTERACT.md).
-- Manually exercise interaction from the user's real Mac terminal: custom return
-  key, terminal restoration, and return to automation. Automated PTY tests are useful
-  but do not replace this user check.
 - Review the public API and retained compatibility choices before release.
 - Validate actual IOS/IOS-XR/Junos firmware and add sanitized device recordings.
 - Push the branch and review the resulting draft PR/CI before merging or publishing.

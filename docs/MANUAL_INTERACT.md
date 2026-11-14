@@ -32,9 +32,10 @@ Repeat with Ctrl-X if desired:
 rv run bundle exec ruby examples/manual_interact.rb C-x
 ```
 
-Both keys passed a driven nested-PTY check on the Mac with rv Ruby 4.0.9. This still
-needs the human Terminal check above; no interactive test should be inferred from
-an ordinary non-TTY CI run. The harness rejects non-TTY input/output.
+Both keys passed a driven nested-PTY check on the Mac with rv Ruby 4.0.9. The user
+also completed the human Ctrl-] check and reported all success markers. Ctrl-X is
+automated-tested only. The harness rejects non-TTY input/output; ordinary non-TTY
+CI is not a substitute for this check.
 
 If a marker is missing, keep the output and report which step failed. Do not treat
 returning to a shell alone as proof of successful resumed automation.
