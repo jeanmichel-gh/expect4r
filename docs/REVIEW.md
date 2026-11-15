@@ -1,0 +1,108 @@
+# Focused review and cross-platform validation
+
+Date: 2026-11-13. Reviewed baseline: `7247720` on `feature/expect4r-v2`, covering
+P1–P6 and configurable interaction keys. This is a focused review by the implementation
+assistant, not an independent external audit. Reproducible findings below are fixed
+in the accompanying changes and covered by `test/core/review_regression_test.rb`.
+
+## Findings and fixes
+
+| Priority | Finding and concrete trigger | Fix |
+|---|---|---|
+| P1 | Overlapping secret occurrences were not fully covered: filtering `abcdef` with registered `abc` and `bcdef` produced `[REDACTED]def` | Merge all matching intervals, carry masked overlap across chunks and censor incomplete final prefixes |
+| P2 | Direct Redactor use with non-ASCII text could mix regexp/string character indexes with byte slicing | Convert input to binary before searching and slicing; test `ésecret!` |
+| P1 | Read-side deadline diagnostics could raise before fresh backpressure input was retained; ordinary receive diagnostics could also skip advancing redaction state | Retain protocol bytes and advance streaming redaction before invoking fallible callbacks/sinks |
+| P1 | A transcript failure during overflow replaced `BufferOverflow` with `TransportError`, losing access to rejected bytes | Preserve overflow as the primary error and keep transcript/diagnostic failures in `cleanup_errors` |
+| P2 | Remote EOF discarded a held escape prefix and could process newly ready keyboard input after closure | Return the held prefix in `InteractionResult#pending_input`; leave new keyboard input unread |
+
+The overlap fix can emit more than one `[REDACTED]` marker for a contiguous masked
+region when it spans successive emissions. Registered secret bytes remain covered.
+Raw protocol IO, explicit result payloads and human terminal display remain raw by
+contract; filtering still requires registration before receipt/transmission.
+
+The overflow fix preserves the original error's `buffer` and `rejected` snapshots;
+it does not silently disable capture limits. Diagnostic failures on otherwise normal
+reads still propagate, with received bytes retained for explicit recovery. No automatic
+command replay is introduced.
+
+## Scope
+
+Checked matching/consumption and staging, capture write accounting, streaming
+redaction and diagnostic error precedence, recording/replay structure and timing,
+manual interaction, and ownership/cleanup boundaries. Existing tests also cover
+router modes, configuration depth, paging, ping and candidate cleanup. No additional
+reproducible replay defect was identified in this pass; that is not a guarantee that
+all timing/terminal/firmware edge cases are covered.
+
+Regression cases include overlapping and fragmented literals, non-ASCII byte offsets,
+sink failure plus overflow, receive diagnostics during writer backpressure, redactor
+continuity after a failed read diagnostic, held escape prefixes at EOF, and fresh
+keyboard input arriving with EOF.
+
+## Validation
+
+| Environment | Core | Router application | Legacy |
+|---|---|---|---|
+| Native macOS ARM64, rv Ruby 4.0.9 | 140 tests / 787 assertions, passed | 30 / 266, passed | 20 / 68, passed |
+| Linux ARM64 container, Ruby 4.0.6 | 140 tests / 787 assertions, passed | 30 / 266, passed | 20 / 68, passed |
+
+Each environment passed **190 tests / 1,121 assertions**. Linux used a disposable
+source copy in the user's reachable VM; implementation changes remain in the Mac
+checkout. The Linux run additionally passed local dialogue, record/replay and router
+simulator examples, both gem builds, source-to-gem file-list/content comparisons,
+and isolated core/companion installation checks. The final Mac gem builds and
+installed-gem checks are recorded with the same review changes.
+
+`git diff --check` passes. GitHub CI execution is a separate check after pushing.
+
+## Human terminal validation
+
+The user completed the [Mac Terminal check](MANUAL_INTERACT.md) and reported
+`MANUAL_OK`, `RETURNED_TO_RUBY`, `TERMINAL_RESTORED`, and `INTERACT_CHECK_PASSED`.
+This confirms manual interaction, the default harness Ctrl-] return key, exact
+terminal-setting restoration and successful resumed automation. The driven
+nested-PTY checks also passed Ctrl-] and Ctrl-X; only Ctrl-] is human-confirmed.
+
+## Remaining work
+
+- Review the public API and retained compatibility choices before release.
+- Validate actual IOS/IOS-XR/Junos firmware and add sanitized device recordings when access becomes available. Devices are currently unavailable; simulator/replay coverage is not evidence of firmware compatibility.
+- Review draft PR #11 and CI before merging or publishing. The v2 branch has been pushed.
+
+No real-router compatibility or release-readiness approval is implied by these results.
+
+## Linux application playground
+
+The Docker playground installs the checked-out core and router gems with Ruby 4.0.6. Real SSH, Telnet, SQLite and Python dialogue checks passed on ARM64 Linux, alongside local replay and the router simulator. SSH recording metadata confirmed a redacted password write. The user confirmed manual SSH handoff while `dd` was active, followed by interrupted `dd` and `SSH_CHECK_PASSED`. The demo now explicitly interrupts the foreground process after handoff; core `interact` semantics are unchanged. Driven PTY checks passed this case over both SSH and Telnet.
+
+## Additional failure validation and API/documentation pass
+
+The Linux playground now checks rejected SSH authentication, abrupt remote-shell
+exit, checksum-verified 3 MiB capture with bounded matching/retention, and capture
+timeout with preserved partial output followed by interruption. All passed on
+ARM64 Linux / Ruby 4.0.6. These checks do not simulate network partition behavior.
+Commit a9641e6 passed both macOS 4.0.9 and Ubuntu 4.0.6 GitHub checks.
+
+The README, migration guide, functional API overview and capture contract were
+cross-checked for the exercised APIs. Corrected stale implementation-phase wording
+and clarified that `expect` returns a Result, with a status symbol. This is a scoped
+documentation review, not a new audit of every public method or full Tcl parity.
+
+Retained API choices to approve before release:
+
+- Ruby >= 4.0.6; earlier requested Ruby 3.2/3.3/3.4 support is not delivered by v2.
+- Core `interact` defaults to Ctrl-T; demos explicitly choose configurable Ctrl-].
+- Returning from `interact` leaves the remote program running. The playground's
+  Ctrl-C recovery is application policy and may interrupt unfinished work.
+- `expect` exposes timeout/EOF as Result statuses; bang methods raise unless those
+  outcomes are explicitly handled. Capture timeout consumes accepted partial data;
+  an ordinary timed-out expect retains unmatched input.
+- Router modes and ping belong to the companion gem. Unknown configuration depth
+  is nil, rather than inferred certainty; Junos operational mode does not prove
+  administrative authorization. Candidate commits are explicit.
+- Legacy support is source-only and requires a separate process. No automatic
+  retry/reconnect or complete Tcl/Expect feature parity is promised.
+
+Real-device compatibility remains unverified because no devices are available.
+The PR stays draft pending API/compatibility decisions and final review; simulated
+coverage must not be presented as production firmware validation.

@@ -1,3 +1,27 @@
+V2 review fixes: overlapping/non-ASCII redaction, input preservation on diagnostic failures, overflow error precedence, and held interaction input at remote EOF. Mac and Linux Ruby 4 validation passed.
+
+V2 development: readable configurable interaction return keys via escape_key (for example C-]); retain literal byte escapes and the Ctrl-T default.
+
+V2 development: strict offline recording replay, alternate fragmentation, scaled timing and TX verification; fix fragmented router pager spaces and retain genuine indentation.
+
+V2 development: generic streaming capture, bounded retention, confirmed sink progress; router storage shares the core writer. Build gems directly from source and verify payload freshness.
+
+V2 development: separate expect4r-routers application gem and source-only legacy tree; retain vendor modes, conservative configuration depth, show and polymorphic ping.
+
+=== 2.0.0 development (unreleased)
+
+ * Introduce a general-purpose Ruby 4 PTY dialogue engine with ordered pattern
+   blocks, named immutable results, continuation and monotonic time budgets.
+ * Preserve unmatched suffixes, multiline and fragmented UTF-8 input; raise on
+   buffer overflow rather than silently discarding match input.
+ * Add owned/borrowed transport handling, partial-write reporting, deterministic
+   EOF, bounded child cleanup, multi-session waits and terminal interaction.
+ * Add per-session logging/redaction and an independent router CLI simulator.
+ * Add simulator-tested IOS, IOS-XR and Junos command/configuration policies.
+ * Preserve the old API behind require 'expect4r/legacy', in separate processes.
+ * Add rv instructions, runnable local examples, functional and migration docs,
+   a gemspec and a Linux/macOS CI matrix. No gem has been published.
+
 === 0.0.11 Thu Sep 18, 2014
 
  * Adding connection retry mechanism.
