@@ -74,3 +74,35 @@ No real-router compatibility or release-readiness approval is implied by these r
 ## Linux application playground
 
 The Docker playground installs the checked-out core and router gems with Ruby 4.0.6. Real SSH, Telnet, SQLite and Python dialogue checks passed on ARM64 Linux, alongside local replay and the router simulator. SSH recording metadata confirmed a redacted password write. The user confirmed manual SSH handoff while `dd` was active, followed by interrupted `dd` and `SSH_CHECK_PASSED`. The demo now explicitly interrupts the foreground process after handoff; core `interact` semantics are unchanged. Driven PTY checks passed this case over both SSH and Telnet.
+
+## Additional failure validation and API/documentation pass
+
+The Linux playground now checks rejected SSH authentication, abrupt remote-shell
+exit, checksum-verified 3 MiB capture with bounded matching/retention, and capture
+timeout with preserved partial output followed by interruption. All passed on
+ARM64 Linux / Ruby 4.0.6. These checks do not simulate network partition behavior.
+Commit a9641e6 passed both macOS 4.0.9 and Ubuntu 4.0.6 GitHub checks.
+
+The README, migration guide, functional API overview and capture contract were
+cross-checked for the exercised APIs. Corrected stale implementation-phase wording
+and clarified that `expect` returns a Result, with a status symbol. This is a scoped
+documentation review, not a new audit of every public method or full Tcl parity.
+
+Retained API choices to approve before release:
+
+- Ruby >= 4.0.6; earlier requested Ruby 3.2/3.3/3.4 support is not delivered by v2.
+- Core `interact` defaults to Ctrl-T; demos explicitly choose configurable Ctrl-].
+- Returning from `interact` leaves the remote program running. The playground's
+  Ctrl-C recovery is application policy and may interrupt unfinished work.
+- `expect` exposes timeout/EOF as Result statuses; bang methods raise unless those
+  outcomes are explicitly handled. Capture timeout consumes accepted partial data;
+  an ordinary timed-out expect retains unmatched input.
+- Router modes and ping belong to the companion gem. Unknown configuration depth
+  is nil, rather than inferred certainty; Junos operational mode does not prove
+  administrative authorization. Candidate commits are explicit.
+- Legacy support is source-only and requires a separate process. No automatic
+  retry/reconnect or complete Tcl/Expect feature parity is promised.
+
+Real-device compatibility remains unverified because no devices are available.
+The PR stays draft pending API/compatibility decisions and final review; simulated
+coverage must not be presented as production firmware validation.

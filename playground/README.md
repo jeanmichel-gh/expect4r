@@ -25,6 +25,7 @@ Inside the container:
 
 ```sh
 sh check.sh
+ruby failure_checks.rb            # Failure and bounded-output checks
 ruby dialogues.rb ssh
 ruby dialogues.rb telnet
 ruby dialogues.rb sqlite
@@ -70,3 +71,7 @@ Built and exercised on the ARM64 Linux VM with Docker and Ruby 4.0.6: all four a
 The user subsequently confirmed the corrected manual SSH scenario: `dd` was interrupted, control returned to Ruby, and `SSH_CHECK_PASSED` was printed. Driven PTY checks also passed the foreground-`dd` handoff over SSH and Telnet. Manual Telnet handoff has not been human-confirmed.
 
 Real IOS, IOS XR, and Junos devices are unavailable for validation. Router simulator and replay coverage exercise application behavior but do not establish compatibility with actual vendor firmware. Real-device validation remains outstanding; it does not block use of this generic Linux playground.
+
+## Failure checks
+
+`check.sh` includes `failure_checks.rb`: a single rejected SSH password (exit 255), an authenticated shell killed with SIGKILL (EOF and unsuccessful exit), a 3 MiB Python response captured with a 4 KiB matching buffer and 128-byte retained tail (full sink checksum verified), and a stalled Python capture (partial output returned on timeout, followed by Ctrl-C and EOF). These run noninteractively; no real routers or human keystrokes are required. Rebuild the image after pulling new checks. They validate the generic engine against local applications, not network outages or vendor firmware.

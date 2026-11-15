@@ -23,9 +23,11 @@ The old files remain unchanged except for the loader boundary; they are not the
 implementation of the new API. Legacy tests run separately with `rake legacy`.
 Tests under `test/core` and `applications/routers/test` exercise only the new API.
 
-The local router simulator supports reproducible development. Real SSH servers,
-device firmware, privilege escalation, noisy banners and unusual prompts still
-need device-specific verification before migrating production scripts.
+The local router simulator supports reproducible development. The Linux playground
+also verifies real local SSH and Telnet dialogues, including rejected SSH login and
+remote-shell disconnection. Device firmware, privilege escalation, noisy banners
+and unusual prompts still need device-specific verification before migrating
+production scripts.
 
 Router scripts now install `expect4r-routers`, require `expect4r_routers`, and use
 `Expect4rRouters` for router classes, command results and application exceptions.

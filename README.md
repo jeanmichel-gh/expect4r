@@ -26,7 +26,7 @@ are tried in declaration order. `before`, `match`, `after` and `captures` are im
 byte snapshots. Completed lines are never removed implicitly, and a matched suffix
 is retained for the next wait.
 
-`expect` returns `:matched`, `:timeout` or `:eof` results. `expect!` raises on unhandled
+`expect` returns a Result whose `status` is `:matched`, `:timeout` or `:eof`. `expect!` raises on unhandled
 timeout/EOF; explicitly requesting or handling an event acknowledges it.
 `exp_continue` resumes matching and resets the relative timeout; use
 `exp_continue(reset_timeout: false)` to retain it. `total_timeout` never resets.
@@ -88,7 +88,7 @@ Callbacks receive frozen metadata Hashes without protocol bytes or pattern text.
 Tracing is disabled by default. Use `session.with_debug(output: $stderr) { ... }`
 for readable scoped diagnostics; add `bytes: true` for bounded, filtered previews
 or `format: :hex` for hex output. See the [design and usage](docs/DEBUGGING_AND_BUFFERING.md)
-for event semantics, sink failures and the remaining implementation phases.
+for event semantics, sink failures and the completed implementation phases.
 
 Use `recording: file` for versioned RX/TX JSONL recordings, and
 `history: { max_events: 100, max_bytes: 65_536 }` for bounded metadata history.
