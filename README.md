@@ -133,3 +133,7 @@ expect4r matcher implements the stricter buffering, continuation, deadline and
 callback contracts. The dependency is pinned until compatibility checks justify
 an upgrade. The v2 implementation is locally tested software, not a promise of
 complete Tcl/Expect compatibility or validated support for every vendor release.
+
+### Linux playground
+
+See [playground/README.md](playground/README.md) for a Docker lab with real SSH, Telnet, SQLite, and Python dialogues, configurable manual handoff, and recording examples.

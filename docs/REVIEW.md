@@ -66,7 +66,11 @@ nested-PTY checks also passed Ctrl-] and Ctrl-X; only Ctrl-] is human-confirmed.
 ## Remaining work
 
 - Review the public API and retained compatibility choices before release.
-- Validate actual IOS/IOS-XR/Junos firmware and add sanitized device recordings.
-- Push the branch and review the resulting draft PR/CI before merging or publishing.
+- Validate actual IOS/IOS-XR/Junos firmware and add sanitized device recordings when access becomes available. Devices are currently unavailable; simulator/replay coverage is not evidence of firmware compatibility.
+- Review draft PR #11 and CI before merging or publishing. The v2 branch has been pushed.
 
 No real-router compatibility or release-readiness approval is implied by these results.
+
+## Linux application playground
+
+The Docker playground installs the checked-out core and router gems with Ruby 4.0.6. Real SSH, Telnet, SQLite and Python dialogue checks passed on ARM64 Linux, alongside local replay and the router simulator. SSH recording metadata confirmed a redacted password write. The user confirmed manual SSH handoff while `dd` was active, followed by interrupted `dd` and `SSH_CHECK_PASSED`. The demo now explicitly interrupts the foreground process after handoff; core `interact` semantics are unchanged. Driven PTY checks passed this case over both SSH and Telnet.
